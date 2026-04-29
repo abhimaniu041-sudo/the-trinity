@@ -11,59 +11,88 @@ class TrinityApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0F0F0F), // Deep Black
-        primaryColor: Colors.redAccent,
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        scaffoldBackgroundColor: Colors.white,
       ),
-      home: const Dashboard(),
+      home: const LoginPage(),
     );
   }
 }
 
-class Dashboard extends StatelessWidget {
-  const Dashboard({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(30.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Header with Logo
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset('assets/icon.png', width: 50, height: 50),
-                  const Icon(Icons.notifications_none, color: Colors.white),
-                ],
-              ),
+              Image.asset('assets/icon.png', width: 120), // Aapka Assembly worker logo
               const SizedBox(height: 30),
               const Text(
-                "Welcome to THE TRINITY",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 1),
+                "THE TRINITY",
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.indigo),
               ),
               const Text(
-                "Premium Services Active",
-                style: TextStyle(color: Colors.redAccent, fontSize: 14),
+                "Shopkeeper & Assembly Login",
+                style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 50),
               
-              // Functional Cards
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  children: [
-                    _buildMenuCard("Gaming VPN", Icons.security, Colors.blue),
-                    _buildMenuCard("Boost Performance", Icons.speed, Colors.orange),
-                    _buildMenuCard("Premium Files", Icons.folder_special, Colors.purple),
-                    _buildMenuCard("User Profile", Icons.person, Colors.redAccent),
-                  ],
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  prefixIcon: const Icon(Icons.phone),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.lock),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Yahan hum dashboard par navigate karenge
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ShopDashboard()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text("LOGIN", style: TextStyle(fontSize: 18)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () {},
+                child: const Text("Forgot Password?"),
               ),
             ],
           ),
@@ -71,21 +100,17 @@ class Dashboard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildMenuCard(String title, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 40, color: color),
-          const SizedBox(height: 10),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-        ],
+class ShopDashboard extends StatelessWidget {
+  const ShopDashboard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Trinity Shop Dashboard")),
+      body: Center(
+        child: const Text("Dashboard will have product upload & order tracking"),
       ),
     );
   }
