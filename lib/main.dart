@@ -1,68 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'utils/constants.dart';
 
 void main() {
-  runApp(const TheTrinityApp());
+  runApp(const TrinityApp());
 }
 
-class TheTrinityApp extends StatelessWidget {
-  const TheTrinityApp({super.key});
+class TrinityApp extends StatelessWidget {
+  const TrinityApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'The Trinity',
-      theme: ThemeData(
-        brightness: Brightness.dark,
+      theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0F0F0F), // Deep Black
-        primaryColor: const Color(0xFFFF0000), // Pure Red
-        textTheme: GoogleFonts.orbitronTextTheme(Theme.of(context).textTheme).apply(
-          bodyColor: Colors.white,
-          displayColor: Colors.white,
-        ),
+        primaryColor: Colors.redAccent,
       ),
-      home: const SplashScreen(),
+      home: const Dashboard(),
     );
   }
 }
 
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
+class Dashboard extends StatelessWidget {
+  const Dashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A0000), Color(0xFF000000)],
-          ),
-        ),
-        child: Center(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Yahan aap apna logo laga sakte hain
-              const Icon(Icons.shield_rounded, size: 100, color: Color(0xFFFF0000)),
-              const SizedBox(height: 20),
-              Text(
-                'THE TRINITY',
-                style: GoogleFonts.orbitron(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 4,
-                  color: const Color(0xFFFF0000),
+              // Header with Logo
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Image.asset('assets/icon.png', width: 50, height: 50),
+                  const Icon(Icons.notifications_none, color: Colors.white),
+                ],
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                "Welcome to THE TRINITY",
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 1),
+              ),
+              const Text(
+                "Premium Services Active",
+                style: TextStyle(color: Colors.redAccent, fontSize: 14),
+              ),
+              const SizedBox(height: 40),
+              
+              // Functional Cards
+              Expanded(
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 15,
+                  mainAxisSpacing: 15,
+                  children: [
+                    _buildMenuCard("Gaming VPN", Icons.security, Colors.blue),
+                    _buildMenuCard("Boost Performance", Icons.speed, Colors.orange),
+                    _buildMenuCard("Premium Files", Icons.folder_special, Colors.purple),
+                    _buildMenuCard("User Profile", Icons.person, Colors.redAccent),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              const Text('Premium Gaming Services', style: TextStyle(color: Colors.grey)),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCard(String title, IconData icon, Color color) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 40, color: color),
+          const SizedBox(height: 10),
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
