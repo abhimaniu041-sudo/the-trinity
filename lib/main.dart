@@ -18,7 +18,11 @@ class TrinityApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+      ),
       home: initialRole != null ? _getDashboard(initialRole!) : const RoleSelectionPage(),
     );
   }
@@ -30,13 +34,6 @@ class TrinityApp extends StatelessWidget {
   }
 }
 
-// --- COMMON LOGOUT ---
-void _logout(BuildContext context) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.clear();
-  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
-}
-
 // --- 1. ROLE SELECTION PAGE ---
 class RoleSelectionPage extends StatelessWidget {
   const RoleSelectionPage({super.key});
@@ -44,16 +41,17 @@ class RoleSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("THE TRINITY", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo)),
+            const Text("THE TRINITY", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo, letterSpacing: 2)),
             const Text("Powered by ABHIMANIU", style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold)),
             const SizedBox(height: 50),
             _roleTile(context, "Shopkeeper", Icons.store, Colors.indigo),
             _roleTile(context, "Customer", Icons.shopping_bag, Colors.green),
-            _roleTile(context, "Worker", Icons.build, Colors.orange),
+            _roleTile(context, "Worker", Icons.engineering, Colors.orange),
           ],
         ),
       ),
@@ -69,12 +67,13 @@ class RoleSelectionPage extends StatelessWidget {
         title: Text(role, style: const TextStyle(fontWeight: FontWeight.bold)),
         tileColor: color.withOpacity(0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
       ),
     );
   }
 }
 
-// --- 2. LOGIN PAGE (With Demo OTP: 123456) ---
+// --- 2. LOGIN PAGE (Fix: Direct Login Button) ---
 class LoginPage extends StatefulWidget {
   final String role;
   const LoginPage({super.key, required this.role});
@@ -83,16 +82,24 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool _isOtpSent = false;
   final _otpController = TextEditingController();
 
   void _handleLogin() async {
+    // Agar OTP 123456 hai toh login kar do
     if (_otpController.text == "123456") {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('userRole', widget.role);
       if (mounted) {
-        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => _getDashboard(widget.role)), (route) => false);
+        Navigator.pushAndRemoveUntil(
+          context, 
+          MaterialPageRoute(builder: (context) => _getDashboard(widget.role)), 
+          (route) => false
+        );
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid OTP! Please use 123456"), backgroundColor: Colors.red)
+      );
     }
   }
 
@@ -110,17 +117,23 @@ class _LoginPageState extends State<LoginPage> {
         padding: const EdgeInsets.all(30),
         child: Column(
           children: [
-            const TextField(decoration: InputDecoration(labelText: "Email / Mobile", border: OutlineInputBorder())),
+            const TextField(decoration: InputDecoration(labelText: "Mobile / Email", border: OutlineInputBorder())),
             const SizedBox(height: 20),
-            if (_isOtpSent)
-              TextField(controller: _otpController, decoration: const InputDecoration(labelText: "OTP (123456)", border: OutlineInputBorder())),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () => setState(() => _isOtpSent = true),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 55)),
-              child: Text(_isOtpSent ? "LOGIN" : "GET OTP"),
+            TextField(
+              controller: _otpController, 
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Enter OTP (123456)", border: OutlineInputBorder())
             ),
-            if (_isOtpSent) TextButton(onPressed: _handleLogin, child: const Text("Verify Demo OTP")),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: _handleLogin,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                child: const Text("LOGIN", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ),
           ],
         ),
       ),
@@ -128,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// --- 3. SHOPKEEPER DASHBOARD (Manage Shop & Products) ---
+// --- 3. SHOPKEEPER DASHBOARD ---
 class ShopDashboard extends StatefulWidget {
   const ShopDashboard({super.key});
   @override
@@ -147,35 +160,37 @@ class _ShopDashboardState extends State<ShopDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Shop Management"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))]),
+      appBar: AppBar(title: const Text("Shop Management"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))]),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Register / Update Shop", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("Register Your Shop", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const TextField(decoration: InputDecoration(hintText: "Shop Name")),
-            const TextField(decoration: InputDecoration(hintText: "Real Location Address")),
+            const TextField(decoration: InputDecoration(hintText: "Full Address / Location")),
             const Divider(height: 40),
-            const Text("Add Product", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("Add Product Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             GestureDetector(
               onTap: _pickImage,
               child: Container(
                 height: 150, width: double.infinity,
-                decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(15)),
-                child: _productImage == null ? const Icon(Icons.add_a_photo, size: 50) : Image.file(_productImage!, fit: BoxFit.cover),
+                decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey)),
+                child: _productImage == null ? const Icon(Icons.add_a_photo, size: 50) : ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_productImage!, fit: BoxFit.cover)),
               ),
             ),
             const TextField(decoration: InputDecoration(hintText: "Product Name")),
             const TextField(decoration: InputDecoration(hintText: "Price", prefixText: "₹ ")),
-            const TextField(decoration: InputDecoration(hintText: "Available Pieces (Quantity)")),
+            const TextField(decoration: InputDecoration(hintText: "Total Pieces Available")),
             SwitchListTile(
-              title: const Text("In Stock"),
+              title: const Text("Is in Stock?"),
               value: _isStockAvailable,
+              activeColor: Colors.indigo,
               onChanged: (val) => setState(() => _isStockAvailable = val),
             ),
-            ElevatedButton(onPressed: () {}, child: const Text("Save Product & Shop")),
+            const SizedBox(height: 20),
+            ElevatedButton(onPressed: () {}, style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)), child: const Text("SAVE PRODUCT")),
           ],
         ),
       ),
@@ -183,7 +198,7 @@ class _ShopDashboardState extends State<ShopDashboard> {
   }
 }
 
-// --- 4. CUSTOMER DASHBOARD (View & Buy) ---
+// --- 4. CUSTOMER DASHBOARD ---
 class CustomerDashboard extends StatelessWidget {
   const CustomerDashboard({super.key});
   @override
@@ -191,38 +206,25 @@ class CustomerDashboard extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text("Trinity Market"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))]),
       body: ListView.builder(
-        itemCount: 3, // Demo list
+        itemCount: 2, 
         itemBuilder: (context, index) {
           return Card(
             margin: const EdgeInsets.all(10),
             child: Column(
               children: [
-                ListTile(
-                  title: const Text("Sample Shop Name", style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text("Location: Main Road, Sector 5"),
-                  trailing: const Icon(Icons.location_on, color: Colors.red),
+                const ListTile(
+                  title: Text("Pooja Electronics", style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text("Sector 22, Chandigarh"),
+                  trailing: Icon(Icons.location_on, color: Colors.red),
                 ),
-                Image.network('https://via.placeholder.com/150', height: 150, width: double.infinity, fit: BoxFit.cover),
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Product Name", style: TextStyle(fontSize: 16)),
-                      Text("₹ 500", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                    ],
-                  ),
+                Container(height: 150, color: Colors.grey[300], child: const Center(child: Icon(Icons.image, size: 50))),
+                const ListTile(
+                  title: Text("Washing Machine Spare Part"),
+                  trailing: Text("₹ 1,200", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    children: [
-                      const Text("Qty: "),
-                      DropdownButton<int>(value: 1, items: [1,2,3,4,5].map((i) => DropdownMenuItem(value: i, child: Text("$i"))).toList(), onChanged: (v){}),
-                      const Spacer(),
-                      ElevatedButton(onPressed: () {}, child: const Text("BUY NOW")),
-                    ],
-                  ),
+                  padding: const EdgeInsets.all(10),
+                  child: ElevatedButton(onPressed: () {}, style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 45)), child: const Text("BUY NOW")),
                 )
               ],
             ),
@@ -233,7 +235,7 @@ class CustomerDashboard extends StatelessWidget {
   }
 }
 
-// --- 5. WORKER DASHBOARD (Profile & Hire) ---
+// --- 5. WORKER DASHBOARD ---
 class WorkerDashboard extends StatelessWidget {
   const WorkerDashboard({super.key});
   @override
@@ -244,26 +246,23 @@ class WorkerDashboard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const CircleAvatar(radius: 50, child: Icon(Icons.person, size: 50)),
+            const CircleAvatar(radius: 50, backgroundColor: Colors.orange, child: Icon(Icons.person, size: 50, color: Colors.white)),
             const SizedBox(height: 20),
-            const TextField(decoration: InputDecoration(labelText: "Full Name")),
-            const TextField(decoration: InputDecoration(labelText: "Job Title (e.g. Plumber, Electrician)")),
+            const TextField(decoration: InputDecoration(labelText: "Name")),
+            const TextField(decoration: InputDecoration(labelText: "Job (e.g. Plumber)")),
             const TextField(decoration: InputDecoration(labelText: "Experience (Years)")),
-            const SizedBox(height: 30),
-            const Text("Customers will see you like this:", style: TextStyle(color: Colors.grey)),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.build, color: Colors.orange),
-                title: const Text("Amit Kumar (Electrician)"),
-                subtitle: const Text("5 Years Exp | Rating: ⭐ 4.5"),
-                trailing: ElevatedButton(onPressed: () {}, child: const Text("HIRE")),
-              ),
-            ),
-            const Spacer(),
-            ElevatedButton(onPressed: () {}, style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 55)), child: const Text("Save & Go Online")),
+            const SizedBox(height: 20),
+            ElevatedButton(onPressed: () {}, style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)), child: const Text("UPDATE PROFILE")),
           ],
         ),
       ),
     );
   }
+}
+
+// --- COMMON LOGOUT ---
+void _logout(BuildContext context) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
 }
