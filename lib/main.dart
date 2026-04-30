@@ -36,16 +36,23 @@ class _TrinityAppState extends State<TrinityApp> {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A237E), brightness: Brightness.light),
-        cardTheme: const CardTheme(elevation: 5),
+        cardTheme: CardThemeData(elevation: 5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark),
-        cardTheme: const CardTheme(elevation: 5),
+        cardTheme: CardThemeData(elevation: 5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
       ),
       home: SplashScreen(toggleTheme: _toggleTheme, currentMode: _themeMode),
     );
   }
+}
+
+// --- GLOBAL NAVIGATION HELPER ---
+Widget getRoleDashboard(String role, VoidCallback toggle, ThemeMode mode) {
+  if (role == 'Shopkeeper') return ShopDashboard(toggleTheme: toggle, currentMode: mode);
+  if (role == 'Professional') return ProDashboard(toggleTheme: toggle, currentMode: mode);
+  return CustomerDashboard(toggleTheme: toggle, currentMode: mode);
 }
 
 // --- SPLASH SCREEN ---
@@ -72,13 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (role != null) {
-      if (role == 'Shopkeeper') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ShopDashboard(toggleTheme: widget.toggleTheme, currentMode: widget.currentMode)));
-      } else if (role == 'Professional') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ProDashboard(toggleTheme: widget.toggleTheme, currentMode: widget.currentMode)));
-      } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => CustomerDashboard(toggleTheme: widget.toggleTheme, currentMode: widget.currentMode)));
-      }
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => getRoleDashboard(role, widget.toggleTheme, widget.currentMode)));
     } else {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: widget.toggleTheme)));
     }
@@ -93,7 +94,7 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             Text("THE TRINITY", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Color(0xFF1A237E), letterSpacing: 4)),
             SizedBox(height: 10),
-            Text("POWERED BY ABHIMANIU", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 2)),
+            Text("POWERED BY ABHIMANIU", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
           ],
         ),
       ),
@@ -117,23 +118,23 @@ class RoleSelectionPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Select Your Identity", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+            const Text("Select Identity", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
             const SizedBox(height: 50),
-            _roleTile(context, "Shopkeeper", Icons.storefront_rounded),
-            _roleTile(context, "Customer", Icons.person_search_rounded),
-            _roleTile(context, "Professional", Icons.engineering_rounded),
+            _roleBtn(context, "Shopkeeper", Icons.storefront),
+            _roleBtn(context, "Customer", Icons.person_search),
+            _roleBtn(context, "Professional", Icons.engineering),
           ],
         ),
       ),
     );
   }
 
-  Widget _roleTile(context, String role, IconData icon) => Padding(
+  Widget _roleBtn(context, String role, IconData icon) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
     child: Card(
       child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF1A237E), size: 30),
-        title: Text(role, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        leading: Icon(icon, color: const Color(0xFF1A237E)),
+        title: Text(role, style: const TextStyle(fontWeight: FontWeight.bold)),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => LoginPage(role: role, toggleTheme: toggleTheme))),
       ),
     ),
@@ -150,4 +151,91 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(title: Text("$role Login")),
+      body: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(children: [
+          TextField(controller: _otp, decoration: const InputDecoration(labelText: "OTP (123456)", border: OutlineInputBorder())),
+          const SizedBox(height: 30),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 55)),
+            onPressed: () async {
+              if (_otp.text == "123456") {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.setString('userRole', role);
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => SplashScreen(toggleTheme: toggleTheme, currentMode: ThemeMode.light)), (r) => false);
+                }
+              }
+            },
+            child: const Text("AUTHENTICATE"),
+          )
+        ]),
+      ),
+    );
+  }
+}
+
+// --- DASHBOARDS (Stubs with logic fixed) ---
+class ShopDashboard extends StatelessWidget {
+  final VoidCallback toggleTheme;
+  final ThemeMode currentMode;
+  const ShopDashboard({super.key, required this.toggleTheme, required this.currentMode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Shop Dashboard"), actions: [
+        IconButton(icon: Icon(currentMode == ThemeMode.light ? Icons.dark_mode : Icons.light_mode), onPressed: toggleTheme),
+        IconButton(icon: const Icon(Icons.logout), onPressed: () async {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.remove('userRole');
+          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: toggleTheme)), (r) => false);
+        }),
+      ]),
+      body: const Center(child: Text("Welcome Shopkeeper")),
+    );
+  }
+}
+
+class CustomerDashboard extends StatelessWidget {
+  final VoidCallback toggleTheme;
+  final ThemeMode currentMode;
+  const CustomerDashboard({super.key, required this.toggleTheme, required this.currentMode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Customer Market"), actions: [
+        IconButton(icon: Icon(currentMode == ThemeMode.light ? Icons.dark_mode : Icons.light_mode), onPressed: toggleTheme),
+        IconButton(icon: const Icon(Icons.logout), onPressed: () async {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.remove('userRole');
+          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: toggleTheme)), (r) => false);
+        }),
+      ]),
+      body: const Center(child: Text("Welcome Customer")),
+    );
+  }
+}
+
+class ProDashboard extends StatelessWidget {
+  final VoidCallback toggleTheme;
+  final ThemeMode currentMode;
+  const ProDashboard({super.key, required this.toggleTheme, required this.currentMode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Partner Panel"), actions: [
+        IconButton(icon: Icon(currentMode == ThemeMode.light ? Icons.dark_mode : Icons.light_mode), onPressed: toggleTheme),
+        IconButton(icon: const Icon(Icons.logout), onPressed: () async {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.remove('userRole');
+          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: toggleTheme)), (r) => false);
+        }),
+      ]),
+      body: const Center(child: Text("Welcome Partner")),
+    );
+  }
+}
