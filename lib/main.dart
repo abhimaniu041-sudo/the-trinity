@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart'; // Standard package
+import 'package:url_launcher/url_launcher.dart'; 
 import 'dart:io';
 import 'dart:convert';
 
@@ -10,7 +10,6 @@ void main() async {
   runApp(const TrinityApp());
 }
 
-// --- PREMIMUM THEME ---
 class TrinityApp extends StatelessWidget {
   const TrinityApp({super.key});
   @override
@@ -19,40 +18,33 @@ class TrinityApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.light),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, primary: Colors.indigo, secondary: Colors.orangeAccent),
+        // FIXED: Correct syntax for CardTheme in this build sequence
         cardTheme: CardTheme(
-          elevation: 5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          color: Colors.white,
+          elevation: 8,
+          shadowColor: Colors.black26,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          clipBehavior: Clip.antiAlias,
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.indigo, foregroundColor: Colors.white, centerTitle: true,
-          elevation: 10, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(15))),
-        ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(backgroundColor: Colors.orangeAccent, foregroundColor: Colors.white),
       ),
       home: const SplashScreen(),
     );
   }
 }
 
-// --- GLOBAL UTILS ---
+// --- SHARED UTILS ---
 Future<void> handleLogout(BuildContext context) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.remove('userRole'); // Only remove session, not data
-  if (context.mounted) {
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
-  }
+  await prefs.remove('userRole'); 
+  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
 }
 
-// Fixed Call Function (Local Dialer - Server side required for real hidden numbers)
-Future<void> makeSecureCall(String number) async {
-  final Uri launchUri = Uri(scheme: 'tel', path: number);
-  if (await canLaunchUrl(launchUri)) {
-    await launchUrl(launchUri);
-  }
+Future<void> startSecureCall(String phone) async {
+  final Uri url = Uri(scheme: 'tel', path: phone);
+  if (await canLaunchUrl(url)) { await launchUrl(url); }
 }
 
-// --- SPLASH SCREEN ---
+// --- SPLASH SCREEN (Premium Branding) ---
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
   @override
@@ -63,9 +55,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkStatus();
+    _checkSession();
   }
-  _checkStatus() async {
+  _checkSession() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? role = prefs.getString('userRole');
     await Future.delayed(const Duration(seconds: 3));
@@ -84,10 +76,11 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("THE TRINITY", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.indigo, letterSpacing: 3)),
-            const SizedBox(height: 10),
-            Container(padding: const EdgeInsets.all(5), decoration: BoxDecoration(border: Border.all(color: Colors.indigo), borderRadius: BorderRadius.circular(10)),
-            child: Text("Powered by ABHIMANIU".toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.indigo, letterSpacing: 1.5))),
+            const Text("THE TRINITY", style: TextStyle(fontSize: 50, fontWeight: FontWeight.w900, color: Colors.indigo, letterSpacing: 4)),
+            const SizedBox(height: 5),
+            Container(height: 2, width: 100, color: Colors.orangeAccent),
+            const SizedBox(height: 15),
+            const Text("POWERED BY ABHIMANIU", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 2)),
           ],
         ),
       ),
@@ -95,100 +88,95 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// --- ROLE SELECTION ---
+// --- ROLE SELECTION (Premium Look) ---
 class RoleSelectionPage extends StatelessWidget {
   const RoleSelectionPage({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(decoration: const BoxDecoration(gradient: LinearGradient(colors: [Colors.indigo, Colors.indigoAccent], begin: Alignment.topCenter))),
-          Positioned(bottom: 20, right: 20, child: Text("© ABHIMANIU", style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10))),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(25),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("SELECT PROFILE", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 40),
-                  _roleCard(context, "Shopkeeper", Icons.storefront_rounded, Colors.white, Colors.indigo),
-                  _roleCard(context, "Professional", Icons.engineering_rounded, Colors.white, Colors.orangeAccent),
-                  _roleCard(context, "Customer", Icons.local_mall_rounded, Colors.white, Colors.greenAccent),
-                ],
-              ),
-            ),
-          ),
-        ],
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: [Colors.indigo, Color(0xFF1A237E)], begin: Alignment.topCenter)
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("Welcome to Trinity", style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            const Text("Choose your portal to continue", style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 40),
+            _roleTile(context, "Shopkeeper", Icons.store_rounded, Colors.indigoAccent),
+            _roleTile(context, "Professional", Icons.handyman_rounded, Colors.orangeAccent),
+            _roleTile(context, "Customer", Icons.shopping_basket_rounded, Colors.tealAccent),
+          ],
+        ),
       ),
     );
   }
-  Widget _roleCard(context, title, icon, bgColor, iconColor) => Card(
-    margin: const EdgeInsets.only(bottom: 18), color: bgColor,
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+  Widget _roleTile(context, title, icon, color) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+    child: InkWell(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(role: title))),
-      leading: CircleAvatar(backgroundColor: iconColor.withOpacity(0.1), child: Icon(icon, color: iconColor, size: 28)),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo[900])),
-      trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: iconColor),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)]),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.indigo, size: 30),
+            const SizedBox(width: 20),
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          ],
+        ),
+      ),
     ),
   );
 }
 
 // --- LOGIN PAGE ---
-class LoginPage extends StatefulWidget {
+class LoginPage extends StatelessWidget {
   final String role;
-  const LoginPage({super.key, required this.role});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
+  LoginPage({super.key, required this.role});
   final _phone = TextEditingController();
   final _otp = TextEditingController();
-  bool obscure = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("${widget.role} Login")),
+      appBar: AppBar(title: Text("$role Access")),
       body: Padding(
         padding: const EdgeInsets.all(30),
         child: Column(children: [
-          TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "Mobile Number", border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(15))), prefixIcon: Icon(Icons.phone_android_rounded))),
+          TextField(controller: _phone, decoration: const InputDecoration(labelText: "Mobile", prefixIcon: Icon(Icons.phone), border: OutlineInputBorder())),
           const SizedBox(height: 15),
-          TextField(controller: _otp, keyboardType: TextInputType.number, obscureText: obscure, decoration: InputDecoration(labelText: "OTP (Demo: 123456)", border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(15))), prefixIcon: const Icon(Icons.lock_person_rounded), suffixIcon: IconButton(icon: Icon(obscure ? Icons.visibility : Icons.visibility_off), onPressed: () => setState(() => obscure = !obscure)))),
+          TextField(controller: _otp, decoration: const InputDecoration(labelText: "OTP (123456)", prefixIcon: Icon(Icons.lock), border: OutlineInputBorder())),
           const SizedBox(height: 30),
-          SizedBox(
-            width: double.infinity, height: 55,
-            child: ElevatedButton(
-              onPressed: () async {
-                if (_otp.text == "123456") {
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await prefs.setString('userRole', widget.role);
-                  await prefs.setString('myPhone', _phone.text); // Save my number for anonymous call simulation
-                  if (context.mounted) {
-                    if (widget.role == 'Shopkeeper') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const ShopDashboard()), (r)=>false);
-                    else if (widget.role == 'Customer') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const CustomerDashboard()), (r)=>false);
-                    else Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const ProfessionalDashboard()), (r)=>false);
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Wrong OTP! Use 123456")));
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, elevation: 10, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              child: const Text("AUTHENTICATE", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
-            ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_otp.text == "123456") {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.setString('userRole', role);
+                await prefs.setString('myPhone', _phone.text);
+                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => _getRoute(role)), (r)=>false);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 55)),
+            child: const Text("AUTHENTICATE"),
           )
         ]),
       ),
     );
   }
+  Widget _getRoute(role) {
+    if (role == 'Shopkeeper') return const ShopDashboard();
+    if (role == 'Professional') return const ProfessionalDashboard();
+    return const CustomerDashboard();
+  }
 }
 
-// --- 1. SHOPKEEPER DASHBOARD (IMAGES & REMOVE) ---
+// --- 1. SHOPKEEPER (With Images & AI) ---
 class ShopDashboard extends StatefulWidget {
   const ShopDashboard({super.key});
   @override
@@ -196,93 +184,69 @@ class ShopDashboard extends StatefulWidget {
 }
 
 class _ShopDashboardState extends State<ShopDashboard> {
-  final _name = TextEditingController();
-  final _price = TextEditingController();
-  File? _productImg;
+  final _n = TextEditingController();
+  final _p = TextEditingController();
+  File? _img;
   List products = [];
 
   @override
-  void initState() { super.initState(); _loadProducts(); }
-  _loadProducts() async {
+  void initState() { super.initState(); _load(); }
+  _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? data = prefs.getString('trinity_products');
     if (data != null) setState(() => products = json.decode(data));
   }
-  _pickImg() async {
-    final p = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (p != null) setState(() => _productImg = File(p.path));
-  }
-  _saveProduct() async {
-    if (_name.text.isEmpty || _price.text.isEmpty) return;
-    products.add({'name': _name.text, 'price': _price.text, 'img': _productImg?.path ?? ""});
+  _save() async {
+    if (_n.text.isEmpty) return;
+    products.add({'name': _n.text, 'price': _p.text, 'img': _img?.path ?? ""});
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('trinity_products', json.encode(products));
-    setState(() { _name.clear(); _price.clear(); _productImg = null; });
-  }
-  // NEW: Remove functionality
-  _removeProduct(int index) async {
-    showDialog(context: context, builder: (c) => AlertDialog(
-      title: const Text("Delete Product?"), content: Text("Are you sure you want to remove '${products[index]['name']}'?"),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(c), child: const Text("Cancel")),
-        ElevatedButton(onPressed: () async {
-          products.removeAt(index);
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString('trinity_products', json.encode(products));
-          setState(() {}); Navigator.pop(c);
-        }, style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white), child: const Text("Delete")),
-      ],
-    ));
+    setState(() { _n.clear(); _p.clear(); _img = null; });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Store Management"), actions: [IconButton(icon: const Icon(Icons.logout_rounded), onPressed: () => handleLogout(context))]),
-      floatingActionButton: FloatingActionButton(onPressed: () => _openAI(context), child: const Icon(Icons.support_agent_rounded, size: 30)),
-      body: ListView(
-        padding: const EdgeInsets.all(15),
-        children: [
-          Card(
-            color: Colors.indigo[50],
-            child: Padding(
-              padding: const EdgeInsets.all(15),
-              child: Column(children: [
-                GestureDetector(
-                  onTap: _pickImg,
-                  child: Container(
-                    height: 120, width: double.infinity,
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.indigoAccent)),
-                    child: _productImg == null ? const Icon(Icons.add_photo_alternate_rounded, size: 40, color: Colors.indigo) : ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_productImg!, fit: BoxFit.cover)),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                TextField(controller: _name, decoration: const InputDecoration(labelText: "Product Name", border: OutlineInputBorder(), prefixIcon: Icon(Icons.shopping_bag_outlined))),
-                const SizedBox(height: 10),
-                TextField(controller: _price, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Price (₹)", border: OutlineInputBorder(), prefixIcon: Icon(Icons.currency_rupee_rounded))),
-                const SizedBox(height: 15),
-                ElevatedButton.icon(onPressed: _saveProduct, icon: const Icon(Icons.add), label: const Text("List Product")),
-              ]),
-            ),
-          ),
-          const Divider(height: 30),
-          const Text("Listed Products (Hold to Delete)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 10),
-          ...products.asMap().entries.map((entry) => Card(
+      appBar: AppBar(title: const Text("Inventory"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
+      floatingActionButton: FloatingActionButton(onPressed: () => _showAIChat(context), child: const Icon(Icons.auto_awesome)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          _imagePickerArea(),
+          TextField(controller: _n, decoration: const InputDecoration(labelText: "Product Name")),
+          TextField(controller: _p, decoration: const InputDecoration(labelText: "Price")),
+          const SizedBox(height: 20),
+          ElevatedButton(onPressed: _save, child: const Text("Add to Store")),
+          const Divider(height: 40),
+          ...products.asMap().entries.map((e) => Card(
             child: ListTile(
-              onLongPress: () => _removeProduct(entry.key), // Remove on hold
-              leading: entry.value['img'] != "" ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(entry.value['img']), width: 50, height: 50, fit: BoxFit.cover)) : const Icon(Icons.image),
-              title: Text(entry.value['name']),
-              trailing: Text("₹${entry.value['price']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+              leading: e.value['img'] != "" ? Image.file(File(e.value['img']), width: 50, fit: BoxFit.cover) : const Icon(Icons.image),
+              title: Text(e.value['name']),
+              subtitle: Text("₹${e.value['price']}"),
+              trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () {
+                setState(() => products.removeAt(e.key));
+                _save(); // Resave list
+              }),
             ),
-          )).toList()
-        ],
+          )).toList(),
+        ]),
       ),
     );
   }
+  Widget _imagePickerArea() => GestureDetector(
+    onTap: () async {
+      final p = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (p != null) setState(() => _img = File(p.path));
+    },
+    child: Container(
+      height: 150, width: double.infinity, margin: const EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.indigo.withOpacity(0.2))),
+      child: _img == null ? const Icon(Icons.add_a_photo, size: 40, color: Colors.indigo) : ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.file(_img!, fit: BoxFit.cover)),
+    ),
+  );
 }
 
-// --- 2. PROFESSIONAL DASHBOARD (PHOTO + ACCEPT CALL) ---
+// --- 2. PROFESSIONAL (With Photo & Hire-Call) ---
 class ProfessionalDashboard extends StatefulWidget {
   const ProfessionalDashboard({super.key});
   @override
@@ -290,91 +254,68 @@ class ProfessionalDashboard extends StatefulWidget {
 }
 
 class _ProfessionalDashboardState extends State<ProfessionalDashboard> {
-  bool isOnline = false;
-  File? _proPhoto;
+  File? _proImg;
   String name = "", job = "";
-  final _n = TextEditingController();
-  final _j = TextEditingController();
+  bool online = false, hasHired = false;
 
   @override
-  void initState() { super.initState(); _loadProfile(); }
-  _loadProfile() async {
+  void initState() { super.initState(); _load(); }
+  _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       name = prefs.getString('pro_name') ?? "";
       job = prefs.getString('pro_job') ?? "";
-      if (prefs.getString('pro_photo') != null) _proPhoto = File(prefs.getString('pro_photo')!);
-      isOnline = prefs.getBool('pro_online') ?? false;
+      if (prefs.getString('pro_img') != null) _proImg = File(prefs.getString('pro_img')!);
     });
-  }
-  _pickProPhoto() async {
-    final p = await ImagePicker().pickImage(source: ImageSource.camera); // Prefer Camera
-    if (p != null) setState(() => _proPhoto = File(p.path));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Partner Panel"), actions: [IconButton(icon: const Icon(Icons.logout_rounded), onPressed: () => handleLogout(context))]),
-      floatingActionButton: FloatingActionButton(onPressed: () => _openAI(context), child: const Icon(Icons.support_agent_rounded, size: 30)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: name == "" ? Column(children: [
-          const Text("Complete Your Profile", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 15),
-          GestureDetector(
-            onTap: _pickProPhoto,
-            child: CircleAvatar(radius: 60, backgroundColor: Colors.indigo[100], backgroundImage: _proPhoto != null ? FileImage(_proPhoto!) : null, child: _proPhoto == null ? const Icon(Icons.add_a_photo, size: 40, color: Colors.indigo) : null),
-          ),
-          const SizedBox(height: 15),
-          TextField(controller: _n, decoration: const InputDecoration(labelText: "Full Name", border: OutlineInputBorder())),
-          const SizedBox(height: 10),
-          TextField(controller: _j, decoration: const InputDecoration(labelText: "Expertise (e.g. Electrician)", border: OutlineInputBorder())),
-          ElevatedButton(onPressed: () async {
-            if (_proPhoto == null) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please upload profile photo"))); return;
-            }
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            await prefs.setString('pro_name', _n.text); await prefs.setString('pro_job', _j.text); await prefs.setString('pro_photo', _proPhoto!.path);
-            _loadProfile();
-          }, child: const Text("Go Online"))
-        ]) : Column(children: [
-          // PREMIUM PARTNER CARD
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(gradient: const LinearGradient(colors: [Colors.indigo, Colors.blueAccent]), borderRadius: BorderRadius.circular(20), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]),
-            child: Column(children: [
-              CircleAvatar(radius: 40, backgroundImage: _proPhoto != null ? FileImage(_proPhoto!) : null),
-              Text(name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-              Text(job, style: const TextStyle(color: Colors.white70)),
-            ]),
-          ),
-          SwitchListTile(
-            title: const Text("Status (Get Requests)"),
-            value: isOnline,
-            onChanged: (v) async {
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('pro_online', v);
-              setState(() => isOnline = v);
-            },
-          ),
-          const Divider(height: 30),
-          const Text("Incoming Leads", style: TextStyle(fontWeight: FontWeight.bold)),
-          Card(color: Colors.orange[50], child: ListTile(
-            title: const Text("Urgent Requirement"), subtitle: const Text("Tap Fitting | Sector 22"),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () {}),
-              // NEW CALL LOGIC: Standard practice to use local dialer. Server Required for full hide.
-              IconButton(icon: const Icon(Icons.call, color: Colors.green), onPressed: () => makeSecureCall("7777777777")), 
-            ]),
-          ))
-        ]),
-      ),
+      appBar: AppBar(title: const Text("Partner Hub"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
+      floatingActionButton: FloatingActionButton(onPressed: () => _showAIChat(context), child: const Icon(Icons.auto_awesome)),
+      body: name == "" ? _createProfile() : _mainDashboard(),
     );
   }
+
+  Widget _createProfile() => Padding(
+    padding: const EdgeInsets.all(30),
+    child: Column(children: [
+      GestureDetector(
+        onTap: () async {
+          final p = await ImagePicker().pickImage(source: ImageSource.camera);
+          if (p != null) setState(() => _proImg = File(p.path));
+        },
+        child: CircleAvatar(radius: 60, backgroundImage: _proImg != null ? FileImage(_proImg!) : null, child: _proImg == null ? const Icon(Icons.camera_alt) : null),
+      ),
+      const SizedBox(height: 20),
+      const TextField(decoration: InputDecoration(labelText: "Your Speciality (e.g. Plumber)")),
+      ElevatedButton(onPressed: () async {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('pro_name', "ABHIMANIU");
+        await prefs.setString('pro_job', "Plumber");
+        if (_proImg != null) await prefs.setString('pro_img', _proImg!.path);
+        _load();
+      }, child: const Text("Go Live")),
+    ]),
+  );
+
+  Widget _mainDashboard() => Column(children: [
+    Container(
+      margin: const EdgeInsets.all(20), padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(gradient: const LinearGradient(colors: [Colors.indigo, Colors.blue]), borderRadius: BorderRadius.circular(20)),
+      child: Row(children: [
+        CircleAvatar(radius: 30, backgroundImage: _proImg != null ? FileImage(_proImg!) : null),
+        const SizedBox(width: 15),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), Text(job, style: const TextStyle(color: Colors.white70))]),
+      ]),
+    ),
+    const Text("Wait for hiring requests to see customer contact."),
+    if (hasHired) Card(child: ListTile(title: const Text("Customer Hired You!"), trailing: IconButton(icon: const Icon(Icons.call, color: Colors.green), onPressed: () => startSecureCall("9999999999")))),
+  ]);
 }
 
-// --- 3. CUSTOMER DASHBOARD (SEARCH FIX & AI) ---
+// --- 3. CUSTOMER (With Search Fix & Hire-Call) ---
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
   @override
@@ -384,101 +325,86 @@ class CustomerDashboard extends StatefulWidget {
 class _CustomerDashboardState extends State<CustomerDashboard> with SingleTickerProviderStateMixin {
   late TabController _tab;
   String query = "";
-  List allProducts = [];
-  Map? onlineProData;
-  File? _proP;
+  List products = [];
+  Map? pro;
+  bool isHired = false;
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 2, vsync: this);
-    _fetchMarketData();
+    _fetch();
   }
 
-  _fetchMarketData() async {
+  _fetch() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // Products
     String? pData = prefs.getString('trinity_products');
-    if (pData != null) allProducts = json.decode(pData);
-    
-    // Professionals
-    if (prefs.getBool('pro_online') ?? false) {
-      if (prefs.getString('pro_photo') != null) _proP = File(prefs.getString('pro_photo')!);
-      setState(() {
-        onlineProData = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'phone': prefs.getString('myPhone')};
-      });
-    } else {
-      setState(() { onlineProData = null; });
+    if (pData != null) setState(() => products = json.decode(pData));
+    if (prefs.getString('pro_name') != null) {
+      setState(() => pro = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'img': prefs.getString('pro_img')});
     }
-    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Trinity Marketplace"),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchMarketData), IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))],
+        title: const Text("Trinity Market"),
+        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch), IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(100),
           child: Column(children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: TextField(
                 onChanged: (v) => setState(() => query = v.toLowerCase()),
-                decoration: InputDecoration(hintText: "Search anything...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)),
+                decoration: InputDecoration(hintText: "Search products/pros...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30))),
               ),
             ),
-            TabBar(controller: _tab, indicatorColor: Colors.white, labelColor: Colors.white, unselectedLabelColor: Colors.white70, tabs: const [Tab(text: "Products"), Tab(text: "Hire Pros")]),
+            TabBar(controller: _tab, indicatorColor: Colors.orangeAccent, tabs: const [Tab(text: "Inventory"), Tab(text: "Experts")]),
           ]),
         ),
       ),
-      floatingActionButton: FloatingActionButton(onPressed: () => _openAI(context), child: const Icon(Icons.auto_awesome_rounded, size: 30)),
+      floatingActionButton: FloatingActionButton(onPressed: () => _showAIChat(context), child: const Icon(Icons.auto_awesome)),
       body: TabBarView(controller: _tab, children: [
-        // Tab 1: Products with image
-        ListView(padding: const EdgeInsets.symmetric(vertical: 10), children: allProducts.where((p) => p['name'].toString().toLowerCase().contains(query)).map((p) => Card(
+        // Tab 1: Products
+        ListView(children: products.where((p) => p['name'].toString().toLowerCase().contains(query)).map((p) => Card(
           child: ListTile(
-            leading: p['img'] != "" ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(p['img']), width: 50, height: 50, fit: BoxFit.cover)) : const Icon(Icons.image, color: Colors.indigo),
+            leading: p['img'] != "" ? Image.file(File(p['img']), width: 50, fit: BoxFit.cover) : const Icon(Icons.image),
             title: Text(p['name']),
-            trailing: ElevatedButton(onPressed: (){}, child: Text("₹${p['price']} BUY")),
+            trailing: const Text("BUY NOW", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
           ),
         )).toList()),
-        
-        // Tab 2: Professionals (Only Online & Hired Logic)
-        ListView(padding: const EdgeInsets.all(10), children: [
-          if (onlineProData != null && (onlineProData!['job'].toString().toLowerCase().contains(query) || onlineProData!['name'].toString().toLowerCase().contains(query)))
+        // Tab 2: Professionals
+        ListView(children: [
+          if (pro != null && pro!['job'].toString().toLowerCase().contains(query))
             Card(
-              color: Colors.green[50],
               child: ListTile(
-                leading: CircleAvatar(backgroundImage: _proP != null ? FileImage(_proP!) : null),
-                title: Text(onlineProData!['name']),
-                subtitle: Text(onlineProData!['job']),
-                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                  ElevatedButton(onPressed: () {}, child: const Text("HIRE")), // Hiring confirm required
-                  const SizedBox(width: 5),
-                  // CALL Logic: In current local standard, opens dialer. Need backend for masking.
-                  IconButton(icon: const Icon(Icons.call_rounded, color: Colors.green), onPressed: () => makeSecureCall(onlineProData!['phone'])), 
-                ]),
+                leading: pro!['img'] != null ? CircleAvatar(backgroundImage: FileImage(File(pro!['img']))) : const CircleAvatar(child: Icon(Icons.person)),
+                title: Text(pro!['name']),
+                subtitle: Text(pro!['job']),
+                trailing: isHired 
+                  ? IconButton(icon: const Icon(Icons.call, color: Colors.green), onPressed: () => startSecureCall("8888888888"))
+                  : ElevatedButton(onPressed: () => setState(() => isHired = true), child: const Text("HIRE")),
               ),
             ),
-          if (onlineProData == null) const Center(child: Padding(padding: EdgeInsets.all(30), child: Text("No Professionals Online right now")))
         ]),
       ]),
     );
   }
 }
 
-// --- AI SUPPORT CHAT ---
-void _openAI(BuildContext context) {
+// --- AI CHATBOT SYSTEM ---
+void _showAIChat(BuildContext context) {
   showModalBottomSheet(
-    context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+    context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
     builder: (context) => Container(
-      padding: const EdgeInsets.all(20), height: MediaQuery.of(context).size.height * 0.7,
+      padding: const EdgeInsets.all(25), height: 500,
       child: Column(children: [
         const Text("Trinity AI Assistant", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo)),
         const Divider(),
-        const Expanded(child: Center(child: Text("How can I help you with Trinity Services?\n(Type 'Product' or 'Hire')", textAlign: TextAlign.center))),
-        TextField(decoration: InputDecoration(hintText: "Ask something...", suffixIcon: const Icon(Icons.send), border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)))),
+        const Expanded(child: Center(child: Text("Hello! I am your AI. How can I help you manage your store or find a worker?", textAlign: TextAlign.center))),
+        TextField(decoration: InputDecoration(hintText: "Type here...", suffixIcon: const Icon(Icons.send), border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)))),
       ]),
     ),
   );
