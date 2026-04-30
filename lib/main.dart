@@ -18,11 +18,7 @@ class TrinityApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-      ),
+      theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
       home: initialRole != null ? getDashboard(initialRole!) : const RoleSelectionPage(),
     );
   }
@@ -34,120 +30,82 @@ class TrinityApp extends StatelessWidget {
   }
 }
 
-// --- COMMON LOGOUT FUNCTION ---
+// --- LOGOUT ---
 Future<void> handleLogout(BuildContext context) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.clear();
   if (context.mounted) {
-    Navigator.pushAndRemoveUntil(
-      context, 
-      MaterialPageRoute(builder: (context) => const RoleSelectionPage()), 
-      (route) => false
-    );
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
   }
 }
 
-// --- 1. ROLE SELECTION PAGE ---
+// --- ROLE SELECTION ---
 class RoleSelectionPage extends StatelessWidget {
   const RoleSelectionPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("THE TRINITY", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo, letterSpacing: 2)),
+            const Text("THE TRINITY", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo)),
             const Text("Powered by ABHIMANIU", style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold)),
             const SizedBox(height: 50),
-            _roleTile(context, "Shopkeeper", Icons.store, Colors.indigo),
-            _roleTile(context, "Customer", Icons.shopping_bag, Colors.green),
-            _roleTile(context, "Worker", Icons.engineering, Colors.orange),
+            _roleBtn(context, "Shopkeeper", Icons.store, Colors.indigo),
+            _roleBtn(context, "Customer", Icons.shopping_bag, Colors.green),
+            _roleBtn(context, "Worker", Icons.engineering, Colors.orange),
           ],
         ),
       ),
     );
   }
-
-  Widget _roleTile(BuildContext context, String role, IconData icon, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-      child: ListTile(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(role: role))),
-        leading: Icon(icon, color: color),
-        title: Text(role, style: const TextStyle(fontWeight: FontWeight.bold)),
-        tileColor: color.withOpacity(0.1),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-      ),
-    );
-  }
+  Widget _roleBtn(context, role, icon, color) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+    child: ListTile(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(role: role))),
+      leading: Icon(icon, color: color),
+      title: Text(role),
+      tileColor: color.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    ),
+  );
 }
 
-// --- 2. LOGIN PAGE ---
-class LoginPage extends StatefulWidget {
+// --- LOGIN ---
+class LoginPage extends StatelessWidget {
   final String role;
-  const LoginPage({super.key, required this.role});
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final _otpController = TextEditingController();
-
-  void _handleLogin() async {
-    if (_otpController.text == "123456") {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userRole', widget.role);
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context, 
-          MaterialPageRoute(builder: (context) => TrinityApp.getDashboard(widget.role)), 
-          (route) => false
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid OTP! Use 123456"), backgroundColor: Colors.red)
-      );
-    }
-  }
+  LoginPage({super.key, required this.role});
+  final _otp = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("${widget.role} Login")),
+      appBar: AppBar(title: Text("$role Login")),
       body: Padding(
         padding: const EdgeInsets.all(30),
-        child: Column(
-          children: [
-            const TextField(decoration: InputDecoration(labelText: "Mobile / Email", border: OutlineInputBorder())),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _otpController, 
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Enter OTP (123456)", border: OutlineInputBorder())
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: _handleLogin,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-                child: const Text("LOGIN", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
+        child: Column(children: [
+          const TextField(decoration: InputDecoration(labelText: "Mobile/Email", border: OutlineInputBorder())),
+          const SizedBox(height: 15),
+          TextField(controller: _otp, decoration: const InputDecoration(labelText: "OTP (123456)", border: OutlineInputBorder())),
+          const SizedBox(height: 25),
+          ElevatedButton(
+            onPressed: () async {
+              if (_otp.text == "123456") {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.setString('userRole', role);
+                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => TrinityApp.getDashboard(role)), (route) => false);
+              }
+            },
+            child: const Text("LOGIN"),
+          )
+        ]),
       ),
     );
   }
 }
 
-// --- 3. CUSTOMER DASHBOARD ---
+// --- CUSTOMER DASHBOARD (With Stock Logic) ---
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
   @override
@@ -155,64 +113,51 @@ class CustomerDashboard extends StatefulWidget {
 }
 
 class _CustomerDashboardState extends State<CustomerDashboard> {
-  String searchQuery = "";
+  int stock = 10; // Default Stock
+  int buyQty = 1;
 
-  void _showEscrow() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Payment Held"),
-        content: const Text("Share this OTP with worker after work: 8899"),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))],
-      ),
-    );
+  void _buyProduct() {
+    if (stock >= buyQty) {
+      setState(() => stock -= buyQty);
+      _showSuccess();
+    } else {
+      _showError("Not enough stock!");
+    }
   }
+
+  void _showSuccess() {
+    showDialog(context: context, builder: (c) => AlertDialog(
+      title: const Text("Purchase Success!"),
+      content: Text("OTP for Worker: 8899\nRemaining Stock: $stock"),
+      actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))],
+    ));
+  }
+
+  void _showError(msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Trinity Market"),
-        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              onChanged: (val) => setState(() => searchQuery = val),
-              decoration: InputDecoration(
-                hintText: "Search (Tap, Wire, etc)...",
-                prefixIcon: const Icon(Icons.search),
-                fillColor: Colors.white, filled: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: ListView(
-        children: [
-          if ("Water Tap".toLowerCase().contains(searchQuery.toLowerCase()))
-            Card(
-              margin: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  const ListTile(title: Text("Pooja Hardware"), trailing: Icon(Icons.location_on, color: Colors.red)),
-                  const ListTile(title: Text("Water Tap"), trailing: Text("₹ 450", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: ElevatedButton(onPressed: _showEscrow, child: const Text("BUY & FIND WORKER")),
-                  )
-                ],
-              ),
-            ),
-        ],
-      ),
+      appBar: AppBar(title: const Text("Trinity Store"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
+      body: ListView(padding: const EdgeInsets.all(15), children: [
+        Card(child: Column(children: [
+          const ListTile(title: Text("Shop: Pooja Electronics"), subtitle: Text("Product: Water Tap")),
+          Text("Available Stock: $stock", style: TextStyle(color: stock > 0 ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Text("Qty: "),
+            DropdownButton<int>(value: buyQty, items: [1,2,3,4,5].map((i) => DropdownMenuItem(value: i, child: Text("$i"))).toList(), onChanged: (v) => setState(() => buyQty = v!)),
+          ]),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: ElevatedButton(onPressed: stock > 0 ? _buyProduct : null, child: Text(stock > 0 ? "BUY NOW" : "OUT OF STOCK")),
+          )
+        ]))
+      ]),
     );
   }
 }
 
-// --- 4. WORKER DASHBOARD ---
+// --- WORKER DASHBOARD (With Profile Creation) ---
 class WorkerDashboard extends StatefulWidget {
   const WorkerDashboard({super.key});
   @override
@@ -220,37 +165,69 @@ class WorkerDashboard extends StatefulWidget {
 }
 
 class _WorkerDashboardState extends State<WorkerDashboard> {
-  final _otpController = TextEditingController();
+  final _name = TextEditingController();
+  final _job = TextEditingController();
+  final _exp = TextEditingController();
+  final _otpVerify = TextEditingController();
+  bool isProfileCreated = false;
 
-  void _releasePayment() {
-    if (_otpController.text == "8899") {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Released Successfully!")));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid OTP from Customer!")));
-    }
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  _loadProfile() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _name.text = prefs.getString('wName') ?? "";
+      _job.text = prefs.getString('wJob') ?? "";
+      _exp.text = prefs.getString('wExp') ?? "";
+      if (_name.text.isNotEmpty) isProfileCreated = true;
+    });
+  }
+
+  _saveProfile() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('wName', _name.text);
+    await prefs.setString('wJob', _job.text);
+    await prefs.setString('wExp', _exp.text);
+    setState(() => isProfileCreated = true);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile Saved Online!")));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Worker Panel"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const Card(color: Colors.orangeAccent, child: ListTile(title: Text("Job: Water Tap Fitting"), subtitle: Text("Payment: ₹300 (Held)"))),
-            const SizedBox(height: 20),
-            TextField(controller: _otpController, decoration: const InputDecoration(labelText: "Enter Customer OTP", border: OutlineInputBorder())),
-            const SizedBox(height: 20),
-            ElevatedButton(onPressed: _releasePayment, child: const Text("FINISH & GET PAID")),
-          ],
-        ),
-      ),
+      body: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(children: [
+        if (!isProfileCreated) ...[
+          const Text("Create Your Worker Profile", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          TextField(controller: _name, decoration: const InputDecoration(labelText: "Full Name")),
+          TextField(controller: _job, decoration: const InputDecoration(labelText: "Job Title (e.g. Plumber)")),
+          TextField(controller: _exp, decoration: const InputDecoration(labelText: "Experience (Years)")),
+          const SizedBox(height: 20),
+          ElevatedButton(onPressed: _saveProfile, child: const Text("CREATE PROFILE")),
+        ] else ...[
+          Card(color: Colors.indigo.withOpacity(0.1), child: ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(_name.text),
+            subtitle: Text("${_job.text} | ${_exp.text} Years Exp"),
+            trailing: IconButton(icon: const Icon(Icons.edit), onPressed: () => setState(() => isProfileCreated = false)),
+          )),
+          const Divider(height: 40),
+          const Text("Verify Completion", style: TextStyle(fontWeight: FontWeight.bold)),
+          TextField(controller: _otpVerify, decoration: const InputDecoration(labelText: "Enter Customer OTP (8899)")),
+          ElevatedButton(onPressed: () {
+            if (_otpVerify.text == "8899") ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Released!")));
+          }, child: const Text("VERIFY & GET PAID"))
+        ]
+      ])),
     );
   }
 }
 
-// --- 5. SHOPKEEPER DASHBOARD ---
+// --- SHOPKEEPER DASHBOARD ---
 class ShopDashboard extends StatefulWidget {
   const ShopDashboard({super.key});
   @override
@@ -258,31 +235,26 @@ class ShopDashboard extends StatefulWidget {
 }
 
 class _ShopDashboardState extends State<ShopDashboard> {
-  File? _image;
-  Future _pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) setState(() => _image = File(picked.path));
+  File? _img;
+  final _name = TextEditingController();
+  final _price = TextEditingController();
+
+  Future _pick() async {
+    final p = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (p != null) setState(() => _img = File(p.path));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Shop Dashboard"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(height: 150, width: double.infinity, color: Colors.grey[200], child: _image == null ? const Icon(Icons.add_a_photo) : Image.file(_image!, fit: BoxFit.cover)),
-            ),
-            const TextField(decoration: InputDecoration(labelText: "Product Name")),
-            const TextField(decoration: InputDecoration(labelText: "Price")),
-            const SizedBox(height: 20),
-            ElevatedButton(onPressed: (){}, child: const Text("SAVE PRODUCT")),
-          ],
-        ),
-      ),
+      appBar: AppBar(title: const Text("Shop Management"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
+      body: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
+        GestureDetector(onTap: _pick, child: Container(height: 100, width: double.infinity, color: Colors.grey[200], child: _img == null ? const Icon(Icons.camera_alt) : Image.file(_img!, fit: BoxFit.cover))),
+        TextField(controller: _name, decoration: const InputDecoration(labelText: "Product Name")),
+        TextField(controller: _price, decoration: const InputDecoration(labelText: "Price")),
+        const SizedBox(height: 20),
+        ElevatedButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Product Saved!"))), child: const Text("SAVE PRODUCT")),
+      ])),
     );
   }
 }
