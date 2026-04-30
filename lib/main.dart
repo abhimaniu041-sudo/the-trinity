@@ -23,14 +23,27 @@ class TrinityApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
-      home: initialRole != null ? _getDashboard(initialRole!) : const RoleSelectionPage(),
+      home: initialRole != null ? getDashboard(initialRole!) : const RoleSelectionPage(),
     );
   }
 
-  Widget _getDashboard(String role) {
+  static Widget getDashboard(String role) {
     if (role == 'Shopkeeper') return const ShopDashboard();
     if (role == 'Worker') return const WorkerDashboard();
     return const CustomerDashboard();
+  }
+}
+
+// --- COMMON LOGOUT FUNCTION ---
+Future<void> handleLogout(BuildContext context) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+  if (context.mounted) {
+    Navigator.pushAndRemoveUntil(
+      context, 
+      MaterialPageRoute(builder: (context) => const RoleSelectionPage()), 
+      (route) => false
+    );
   }
 }
 
@@ -91,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context, 
-          MaterialPageRoute(builder: (context) => _getDashboard(widget.role)), 
+          MaterialPageRoute(builder: (context) => TrinityApp.getDashboard(widget.role)), 
           (route) => false
         );
       }
@@ -100,12 +113,6 @@ class _LoginPageState extends State<LoginPage> {
         const SnackBar(content: Text("Invalid OTP! Use 123456"), backgroundColor: Colors.red)
       );
     }
-  }
-
-  Widget _getDashboard(String role) {
-    if (role == 'Shopkeeper') return const ShopDashboard();
-    if (role == 'Worker') return const WorkerDashboard();
-    return const CustomerDashboard();
   }
 
   @override
@@ -140,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// --- 3. CUSTOMER DASHBOARD (Search + Hire Logic) ---
+// --- 3. CUSTOMER DASHBOARD ---
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
   @override
@@ -149,27 +156,6 @@ class CustomerDashboard extends StatefulWidget {
 
 class _CustomerDashboardState extends State<CustomerDashboard> {
   String searchQuery = "";
-
-  void _showHireDialog(String product) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Hire for $product?"),
-        content: ListTile(
-          leading: const Icon(Icons.person, color: Colors.orange),
-          title: const Text("Rajesh (Plumber)"),
-          subtitle: const Text("Exp: 4 Years | ₹300 Fee"),
-          trailing: ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showEscrow();
-            },
-            child: const Text("Hire"),
-          ),
-        ),
-      ),
-    );
-  }
 
   void _showEscrow() {
     showDialog(
@@ -187,7 +173,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Trinity Market"),
-        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))],
+        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -207,30 +193,26 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       body: ListView(
         children: [
           if ("Water Tap".toLowerCase().contains(searchQuery.toLowerCase()))
-            _productCard("Pooja Hardware", "Water Tap", "₹ 450"),
-        ],
-      ),
-    );
-  }
-
-  Widget _productCard(String shop, String name, String price) {
-    return Card(
-      margin: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          ListTile(title: Text(shop), trailing: const Icon(Icons.location_on, color: Colors.red)),
-          ListTile(title: Text(name), trailing: Text(price, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: ElevatedButton(onPressed: () => _showHireDialog(name), child: const Text("BUY & FIND WORKER")),
-          )
+            Card(
+              margin: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  const ListTile(title: Text("Pooja Hardware"), trailing: Icon(Icons.location_on, color: Colors.red)),
+                  const ListTile(title: Text("Water Tap"), trailing: Text("₹ 450", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: ElevatedButton(onPressed: _showEscrow, child: const Text("BUY & FIND WORKER")),
+                  )
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-// --- 4. WORKER DASHBOARD (Fixed Error) ---
+// --- 4. WORKER DASHBOARD ---
 class WorkerDashboard extends StatefulWidget {
   const WorkerDashboard({super.key});
   @override
@@ -238,7 +220,7 @@ class WorkerDashboard extends StatefulWidget {
 }
 
 class _WorkerDashboardState extends State<WorkerDashboard> {
-  final _otpController = TextEditingController(); // Fixed Variable Name
+  final _otpController = TextEditingController();
 
   void _releasePayment() {
     if (_otpController.text == "8899") {
@@ -251,7 +233,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Worker Panel"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))]),
+      appBar: AppBar(title: const Text("Worker Panel"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -281,3 +263,26 @@ class _ShopDashboardState extends State<ShopDashboard> {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) setState(() => _image = File(picked.path));
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Shop Dashboard"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(height: 150, width: double.infinity, color: Colors.grey[200], child: _image == null ? const Icon(Icons.add_a_photo) : Image.file(_image!, fit: BoxFit.cover)),
+            ),
+            const TextField(decoration: InputDecoration(labelText: "Product Name")),
+            const TextField(decoration: InputDecoration(labelText: "Price")),
+            const SizedBox(height: 20),
+            ElevatedButton(onPressed: (){}, child: const Text("SAVE PRODUCT")),
+          ],
+        ),
+      ),
+    );
+  }
+}
