@@ -1,5 +1,5 @@
 name: the_trinity
-description: A new Flutter project.
+description: A new Flutter project for Shopkeeping and Assembly.
 version: 1.0.0+1
 
 environment:
@@ -8,8 +8,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.1.0  # Server se connect karne ke liye
-  google_fonts: ^6.1.0 # Premium gaming UI ke liye
+  http: ^1.1.0
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.2.2  # Login status yaad rakhne ke liye
 
 dev_dependencies:
   flutter_test:
@@ -18,3 +19,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon.png
