@@ -9,19 +9,14 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Data Storage
-  shared_preferences: ^2.2.2
+  # --- Data & Logic ---
+  shared_preferences: ^2.2.2      # Data save karne ke liye
+  url_launcher: ^6.2.5           # Call karne ke liye
 
-  # UI & Design Components
-  google_fonts: ^6.1.0
-  
-  # Multi-Media Features (Compulsory for your features)
-  image_picker: ^1.0.4       # Product aur Profile photos ke liye
-  photo_view: ^0.14.0        # Images Zoom karne ke liye
-  
-  # Communication & Maps
-  url_launcher: ^6.2.5       # Calling feature ke liye
-  geolocator: ^10.1.0        # Location tracking ke liye
+  # --- Media & UI ---
+  image_picker: ^1.0.4           # Gallery/Camera se photo lene ke liye
+  photo_view: ^0.14.0            # Product images zoom karne ke liye
+  google_fonts: ^6.1.0           # Premium fonts ke liye
 
 dev_dependencies:
   flutter_test:
