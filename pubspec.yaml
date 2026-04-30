@@ -1,5 +1,5 @@
 name: the_trinity
-description: Hyperlocal Marketplace for Shops, Customers and Workers.
+description: Luxury Hyperlocal Marketplace for Shops, Customers and Professionals.
 version: 1.0.0+1
 
 environment:
@@ -8,11 +8,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^6.1.0
+
+  # Data Storage
   shared_preferences: ^2.2.2
-  image_picker: ^1.0.4
-  geolocator: ^10.1.0
-  url_launcher: ^6.2.5  # Ye missing tha, ab add kar diya hai
+
+  # UI & Design Components
+  google_fonts: ^6.1.0
+  
+  # Multi-Media Features (Compulsory for your features)
+  image_picker: ^1.0.4       # Product aur Profile photos ke liye
+  photo_view: ^0.14.0        # Images Zoom karne ke liye
+  
+  # Communication & Maps
+  url_launcher: ^6.2.5       # Calling feature ke liye
+  geolocator: ^10.1.0        # Location tracking ke liye
 
 dev_dependencies:
   flutter_test:
@@ -21,5 +30,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Assets section (Make sure images are in this folder if needed)
   assets:
     - assets/icon.png
