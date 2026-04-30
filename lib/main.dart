@@ -159,7 +159,7 @@ class _ShopDashboardState extends State<ShopDashboard> {
   }
 }
 
-// --- 2. PROFESSIONAL DASHBOARD (Online/Offline Logic) ---
+// --- 2. PROFESSIONAL DASHBOARD ---
 class ProfessionalDashboard extends StatefulWidget {
   const ProfessionalDashboard({super.key});
   @override
@@ -193,7 +193,7 @@ class _ProfessionalDashboardState extends State<ProfessionalDashboard> {
     return Scaffold(
       appBar: AppBar(title: const Text("Professional Panel"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
       body: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-        TextField(controller: _job, decoration: const InputDecoration(labelText: "Your Job (e.g. Electrician)")),
+        TextField(controller: _job, decoration: const InputDecoration(labelText: "Job Title (e.g. Plumber)")),
         const SizedBox(height: 20),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(isOnline ? "YOU ARE ONLINE" : "YOU ARE OFFLINE", style: TextStyle(fontWeight: FontWeight.bold, color: isOnline ? Colors.green : Colors.red)),
@@ -206,7 +206,7 @@ class _ProfessionalDashboardState extends State<ProfessionalDashboard> {
   }
 }
 
-// --- 3. CUSTOMER DASHBOARD (Fixed Search & Visibility) ---
+// --- 3. CUSTOMER DASHBOARD ---
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
   @override
@@ -228,16 +228,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
 
   _fetch() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // Products load
     String? pData = prefs.getString('trinity_products');
     if (pData != null) allProducts = json.decode(pData);
     
-    // Pro Status check
     bool proOnline = prefs.getBool('pro_status') ?? false;
     if (proOnline) {
       proData = {'name': 'Abhimaniu Pro', 'job': prefs.getString('pro_job') ?? 'Pro'};
     } else {
-      proData = null; // Agar offline hai toh data clear
+      proData = null;
     }
     setState(() {});
   }
@@ -255,7 +253,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: TextField(
                 onChanged: (v) => setState(() => query = v.toLowerCase()),
-                decoration: InputDecoration(hintText: "Search anything...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30))),
+                decoration: InputDecoration(hintText: "Search here...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30))),
               ),
             ),
             TabBar(controller: _tab, tabs: const [Tab(text: "Products"), Tab(text: "Professionals")]),
@@ -263,7 +261,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
         ),
       ),
       body: TabBarView(controller: _tab, children: [
-        // Tab 1: Products Search
         ListView(children: allProducts.map((p) {
           if (p['name'].toString().toLowerCase().contains(query)) {
             return Card(child: ListTile(title: Text(p['name']), trailing: Text("₹${p['price']}")));
@@ -271,11 +268,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
           return const SizedBox();
         }).toList()),
         
-        // Tab 2: Professionals (Visible ONLY if Online)
         ListView(children: [
           if (proData != null && proData!['job'].toString().toLowerCase().contains(query))
             Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.person)), title: Text(proData!['name']), subtitle: Text(proData!['job']), trailing: const Icon(Icons.phone_locked, color: Colors.green))),
-          if (proData == null) const Center(padding: EdgeInsets.all(20), child: Text("No Professionals online right now")),
+          if (proData == null) const Padding(padding: EdgeInsets.all(20), child: Center(child: Text("No Professionals online right now"))),
         ]),
       ]),
     );
