@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,8 +18,11 @@ class TrinityApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
-      // Agar pehle se login hai toh seedha dashboard, nahi toh selection screen
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+      ),
       home: initialRole != null ? _getDashboard(initialRole!) : const RoleSelectionPage(),
     );
   }
@@ -37,19 +42,21 @@ class RoleSelectionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("THE TRINITY", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo, letterSpacing: 2)),
-            const Text("Powered by ABHIMANIU", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.indigoAccent)),
-            const SizedBox(height: 50),
-            const Text("Please select your profile to continue", style: TextStyle(color: Colors.grey, fontSize: 16)),
-            const SizedBox(height: 30),
-            _buildRoleCard(context, "Shopkeeper", Icons.storefront_rounded, Colors.indigo),
-            _buildRoleCard(context, "Customer", Icons.shopping_cart_rounded, Colors.green),
-            _buildRoleCard(context, "Worker", Icons.engineering_rounded, Colors.orange),
-          ],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("THE TRINITY", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo, letterSpacing: 2)),
+              const Text("Powered by ABHIMANIU", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.indigoAccent)),
+              const SizedBox(height: 50),
+              const Text("Select Your Profile", style: TextStyle(color: Colors.grey, fontSize: 16)),
+              const SizedBox(height: 30),
+              _buildRoleCard(context, "Shopkeeper", Icons.storefront_rounded, Colors.indigo),
+              _buildRoleCard(context, "Customer", Icons.shopping_bag_rounded, Colors.green),
+              _buildRoleCard(context, "Worker", Icons.engineering_rounded, Colors.orange),
+            ],
+          ),
         ),
       ),
     );
@@ -57,7 +64,7 @@ class RoleSelectionPage extends StatelessWidget {
 
   Widget _buildRoleCard(BuildContext context, String role, IconData icon, Color color) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
       child: InkWell(
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(role: role))),
         child: Container(
@@ -65,15 +72,15 @@ class RoleSelectionPage extends StatelessWidget {
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.5)),
+            border: Border.all(color: color.withOpacity(0.3)),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 40, color: color),
+              Icon(icon, size: 35, color: color),
               const SizedBox(width: 20),
-              Text(role, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+              Text(role, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
               const Spacer(),
-              Icon(Icons.arrow_forward_ios, color: color, size: 18),
+              Icon(Icons.arrow_forward_ios, size: 16, color: color),
             ],
           ),
         ),
@@ -82,7 +89,7 @@ class RoleSelectionPage extends StatelessWidget {
   }
 }
 
-// --- 2. Login Page with Demo OTP ---
+// --- 2. Login Page with Demo OTP (123456) ---
 class LoginPage extends StatefulWidget {
   final String role;
   const LoginPage({super.key, required this.role});
@@ -93,11 +100,9 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _isOtpSent = false;
-  bool _obscurePassword = true;
   final _otpController = TextEditingController();
 
-  void _verifyAndLogin() async {
-    // Demo OTP check
+  void _handleLogin() async {
     if (_otpController.text == "123456") {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('userRole', widget.role);
@@ -109,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid OTP! Try 123456")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Wrong OTP! Use 123456")));
     }
   }
 
@@ -123,39 +128,29 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("${widget.role} Login")),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(30),
         child: Column(
           children: [
+            const TextField(decoration: InputDecoration(labelText: "Email or Mobile Number", border: OutlineInputBorder())),
             const SizedBox(height: 20),
-            TextField(decoration: InputDecoration(labelText: "Email / Mobile", border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)))),
-            const SizedBox(height: 20),
-            TextField(
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)),
+            if (_isOtpSent)
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Enter OTP (Demo: 123456)", border: OutlineInputBorder()),
               ),
-            ),
-            if (_isOtpSent) ...[
-              const SizedBox(height: 20),
-              TextField(controller: _otpController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Enter OTP (Demo: 123456)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)))),
-            ],
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
                 onPressed: () {
-                  if (!_isOtpSent) {
-                    setState(() => _isOtpSent = true);
-                  } else {
-                    _verifyAndLogin();
-                  }
+                  if (!_isOtpSent) setState(() => _isOtpSent = true);
+                  else _handleLogin();
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                child: Text(_isOtpSent ? "LOGIN" : "GET OTP", style: const TextStyle(color: Colors.white, fontSize: 18)),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                child: Text(_isOtpSent ? "VERIFY & LOGIN" : "GET OTP", style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],
@@ -165,15 +160,64 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// --- 3. Dashboards ---
+// --- 3. Dashboards with Logout & Features ---
 
-class ShopDashboard extends StatelessWidget {
+class ShopDashboard extends StatefulWidget {
   const ShopDashboard({super.key});
+  @override
+  State<ShopDashboard> createState() => _ShopDashboardState();
+}
+
+class _ShopDashboardState extends State<ShopDashboard> {
+  File? _image;
+  final picker = ImagePicker();
+
+  Future pickImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) setState(() => _image = File(pickedFile.path));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Shopkeeper Dashboard"), actions: [_logoutButton(context)]),
-      body: const Center(child: Text("Welcome Shopkeeper!\nUpload products here.", textAlign: TextAlign.center)),
+      appBar: AppBar(
+        title: const Text("Shopkeeper Dashboard"),
+        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Text("Add New Product", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: pickImage,
+              child: Container(
+                height: 200,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.grey),
+                ),
+                child: _image == null 
+                  ? const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 50), Text("Tap to select photo")])
+                  : ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_image!, fit: BoxFit.cover)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const TextField(decoration: InputDecoration(labelText: "Product Name", border: OutlineInputBorder())),
+            const SizedBox(height: 15),
+            const TextField(decoration: InputDecoration(labelText: "Price", border: OutlineInputBorder(), prefixText: "₹ ")),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Product Saved Locally"))),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 55), backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+              child: const Text("SAVE PRODUCT"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -183,8 +227,13 @@ class CustomerDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Customer Dashboard"), actions: [_logoutButton(context)]),
-      body: const Center(child: Text("Welcome Customer!\nBrowse and buy products.")),
+      appBar: AppBar(
+        title: const Text("Customer Store"),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))],
+      ),
+      body: const Center(child: Text("Products will be displayed here for purchase.")),
     );
   }
 }
@@ -194,19 +243,20 @@ class WorkerDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Worker Dashboard"), actions: [_logoutButton(context)]),
-      body: const Center(child: Text("Welcome Worker!\nCheck your assembly tasks.")),
+      appBar: AppBar(
+        title: const Text("Worker Panel"),
+        backgroundColor: Colors.orange,
+        foregroundColor: Colors.white,
+        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => _logout(context))],
+      ),
+      body: const Center(child: Text("New Fitting & Assembly tasks will appear here.")),
     );
   }
 }
 
-Widget _logoutButton(BuildContext context) {
-  return IconButton(
-    icon: const Icon(Icons.logout),
-    onPressed: () async {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
-    },
-  );
+// --- Common Logout ---
+void _logout(BuildContext context) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
 }
