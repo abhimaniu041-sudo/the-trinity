@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart'; // Calling ke liye
 import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
@@ -10,43 +11,40 @@ void main() async {
   runApp(const TrinityApp());
 }
 
-// Global functions for logic
-Widget getDashboard(String role) {
-  if (role == 'Shopkeeper') return const ShopDashboard();
-  if (role == 'Professional') return const ProfessionalDashboard();
-  return const CustomerDashboard();
-}
-
-Future<void> handleLogout(BuildContext context) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.clear();
-  if (context.mounted) {
-    Navigator.pushAndRemoveUntil(
-      context, 
-      MaterialPageRoute(builder: (context) => const RoleSelectionPage()), 
-      (route) => false
-    );
-  }
-}
-
 class TrinityApp extends StatelessWidget {
   const TrinityApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.light),
         cardTheme: CardThemeData(
-          elevation: 4,
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          elevation: 5,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
       ),
       home: const SplashScreen(),
     );
+  }
+}
+
+// --- GLOBAL UTILS ---
+// FIXED: Logout ab data delete nahi karega
+Future<void> handleLogout(BuildContext context) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('userRole'); // Sirf login session hataya
+  if (context.mounted) {
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()), (route) => false);
+  }
+}
+
+// Function to handle calls
+Future<void> makeSecureCall(String number) async {
+  final Uri launchUri = Uri(scheme: 'tel', path: number);
+  if (await canLaunchUrl(launchUri)) {
+    await launchUrl(launchUri);
   }
 }
 
@@ -61,27 +59,31 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _init();
+    _checkStatus();
   }
-
-  _init() async {
+  _checkStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? role = prefs.getString('userRole');
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 3));
     if (mounted) {
-      if (role != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => getDashboard(role)));
-      } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()));
-      }
+      if (role == 'Shopkeeper') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ShopDashboard()));
+      else if (role == 'Professional') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfessionalDashboard()));
+      else if (role == 'Customer') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const CustomerDashboard()));
+      else Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const RoleSelectionPage()));
     }
   }
-
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: Text("THE TRINITY", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo, letterSpacing: 2)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("THE TRINITY", style: TextStyle(fontSize: 45, fontWeight: FontWeight.bold, color: Colors.indigo, letterSpacing: 3)),
+            const SizedBox(height: 10),
+            Text("Powered by ABHIMANIU".toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.indigo, letterSpacing: 1.5)),
+          ],
+        ),
       ),
     );
   }
@@ -90,45 +92,41 @@ class _SplashScreenState extends State<SplashScreen> {
 // --- ROLE SELECTION ---
 class RoleSelectionPage extends StatelessWidget {
   const RoleSelectionPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      body: Container(
+        padding: const EdgeInsets.all(25),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text("THE TRINITY", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-            const Text("Premium Service Hub", style: TextStyle(color: Colors.grey)),
+            const Text("Powered by ABHIMANIU", style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, fontSize: 10)),
             const SizedBox(height: 50),
-            _buildBtn(context, "Shopkeeper", Icons.storefront_rounded, Colors.indigo),
-            _buildBtn(context, "Customer", Icons.shopping_cart_rounded, Colors.green),
-            _buildBtn(context, "Professional", Icons.handyman_rounded, Colors.orange),
-            const SizedBox(height: 40),
-            const Text("Powered by ABHIMANIU", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+            _roleTile(context, "Shopkeeper", Icons.store_rounded, Colors.indigo),
+            _roleTile(context, "Professional", Icons.engineering_rounded, Colors.orange),
+            _roleTile(context, "Customer", Icons.person_search_rounded, Colors.green),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildBtn(context, role, icon, color) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+  Widget _roleTile(context, title, icon, color) => Card(
+    margin: const EdgeInsets.only(bottom: 15),
     child: ListTile(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(role: role))),
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(role: title))),
       leading: CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
-      title: Text(role, style: const TextStyle(fontWeight: FontWeight.bold)),
-      tileColor: color.withOpacity(0.05),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      trailing: const Icon(Icons.chevron_right),
     ),
   );
 }
 
-// --- LOGIN ---
+// --- LOGIN PAGE ---
 class LoginPage extends StatelessWidget {
   final String role;
   LoginPage({super.key, required this.role});
+  final _phone = TextEditingController();
   final _otp = TextEditingController();
 
   @override
@@ -136,29 +134,31 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text("$role Login")),
       body: Padding(
-        padding: const EdgeInsets.all(30),
+        padding: const EdgeInsets.all(25),
         child: Column(children: [
-          const TextField(decoration: InputDecoration(labelText: "Mobile / Email", border: OutlineInputBorder())),
-          const SizedBox(height: 20),
-          TextField(controller: _otp, decoration: const InputDecoration(labelText: "OTP (123456)", border: OutlineInputBorder())),
+          TextField(controller: _phone, decoration: const InputDecoration(labelText: "Mobile Number", border: OutlineInputBorder(), prefixIcon: Icon(Icons.phone))),
+          const SizedBox(height: 15),
+          TextField(controller: _otp, decoration: const InputDecoration(labelText: "OTP (123456)", border: OutlineInputBorder(), prefixIcon: Icon(Icons.lock_clock))),
           const SizedBox(height: 30),
           SizedBox(
-            width: double.infinity,
-            height: 55,
+            width: double.infinity, height: 50,
             child: ElevatedButton(
               onPressed: () async {
                 if (_otp.text == "123456") {
                   SharedPreferences prefs = await SharedPreferences.getInstance();
                   await prefs.setString('userRole', role);
+                  await prefs.setString('myPhone', _phone.text); // Phone save for calling
                   if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => getDashboard(role)), (r) => false);
+                    if (role == 'Shopkeeper') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const ShopDashboard()), (r)=>false);
+                    else if (role == 'Customer') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const CustomerDashboard()), (r)=>false);
+                    else Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const ProfessionalDashboard()), (r)=>false);
                   }
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-              child: const Text("LOGIN"),
+              child: const Text("AUTHENTICATE"),
             ),
-          ),
+          )
         ]),
       ),
     );
@@ -175,66 +175,41 @@ class ShopDashboard extends StatefulWidget {
 class _ShopDashboardState extends State<ShopDashboard> {
   final _name = TextEditingController();
   final _price = TextEditingController();
-  File? _image;
+  File? _img;
   List products = [];
 
   @override
   void initState() { super.initState(); _load(); }
-
   _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? data = prefs.getString('trinity_products');
     if (data != null) setState(() => products = json.decode(data));
   }
-
-  _pick() async {
-    final p = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (p != null) setState(() => _image = File(p.path));
-  }
-
   _save() async {
     if (_name.text.isEmpty) return;
-    products.add({'name': _name.text, 'price': _price.text, 'img': _image?.path ?? ""});
+    products.add({'name': _name.text, 'price': _price.text, 'img': _img?.path ?? ""});
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('trinity_products', json.encode(products));
-    _name.clear(); _price.clear(); _image = null;
-    setState(() {});
-  }
-
-  _remove(int index) async {
-    products.removeAt(index);
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('trinity_products', json.encode(products));
-    setState(() {});
+    setState(() { _name.clear(); _price.clear(); _img = null; });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Inventory"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(children: [
-          GestureDetector(
-            onTap: _pick,
-            child: Container(
-              height: 150, width: double.infinity,
-              decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(15)),
-              child: _image == null ? const Icon(Icons.add_a_photo) : ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_image!, fit: BoxFit.cover)),
-            ),
-          ),
-          TextField(controller: _name, decoration: const InputDecoration(labelText: "Product Name")),
-          TextField(controller: _price, decoration: const InputDecoration(labelText: "Price")),
-          ElevatedButton(onPressed: _save, child: const Text("Save Product")),
+      appBar: AppBar(title: const Text("My Store"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
+      body: ListView(
+        padding: const EdgeInsets.all(15),
+        children: [
+          const Text("Add Product", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          TextField(controller: _name, decoration: const InputDecoration(hintText: "Item Name", border: OutlineInputBorder())),
+          const SizedBox(height: 10),
+          TextField(controller: _price, decoration: const InputDecoration(hintText: "Price (₹)", border: OutlineInputBorder())),
+          const SizedBox(height: 10),
+          ElevatedButton(onPressed: _save, child: const Text("List Product")),
           const Divider(height: 40),
-          ...products.asMap().entries.map((e) => Card(
-            child: ListTile(
-              title: Text(e.value['name']),
-              subtitle: Text("₹${e.value['price']}"),
-              trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _remove(e.key)),
-            ),
-          )).toList(),
-        ]),
+          ...products.map((p) => Card(child: ListTile(title: Text(p['name']), trailing: Text("₹${p['price']}")))).toList()
+        ],
       ),
     );
   }
@@ -249,67 +224,63 @@ class ProfessionalDashboard extends StatefulWidget {
 
 class _ProfessionalDashboardState extends State<ProfessionalDashboard> {
   bool isOnline = false;
-  bool hasProfile = false;
-  final _name = TextEditingController();
-  final _job = TextEditingController();
-  String proID = "";
+  String name = "", job = "", phone = "";
+  final _n = TextEditingController();
+  final _j = TextEditingController();
 
   @override
   void initState() { super.initState(); _load(); }
-
   _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      isOnline = prefs.getBool('pro_status') ?? false;
-      _name.text = prefs.getString('pro_name') ?? "";
-      _job.text = prefs.getString('pro_job') ?? "";
-      proID = prefs.getString('pro_id') ?? "";
-      if (_name.text.isNotEmpty) hasProfile = true;
+      name = prefs.getString('pro_name') ?? "";
+      job = prefs.getString('pro_job') ?? "";
+      isOnline = prefs.getBool('pro_online') ?? false;
+      phone = prefs.getString('myPhone') ?? "9999999999";
     });
-  }
-
-  _save() async {
-    if (_name.text.isEmpty) return;
-    String id = "TRIN-${Random().nextInt(9999)}";
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pro_name', _name.text);
-    await prefs.setString('pro_job', _job.text);
-    await prefs.setString('pro_id', id);
-    setState(() { proID = id; hasProfile = true; });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Partner Panel"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
+      appBar: AppBar(title: const Text("Pro Panel"), actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))]),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: hasProfile ? Column(children: [
+        child: name == "" ? Column(children: [
+          TextField(controller: _n, decoration: const InputDecoration(labelText: "Full Name")),
+          TextField(controller: _j, decoration: const InputDecoration(labelText: "Expertise (e.g. Plumber)")),
+          ElevatedButton(onPressed: () async {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.setString('pro_name', _n.text);
+            await prefs.setString('pro_job', _j.text);
+            _load();
+          }, child: const Text("Create Profile"))
+        ]) : Column(children: [
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(gradient: const LinearGradient(colors: [Colors.indigo, Colors.blue]), borderRadius: BorderRadius.circular(20)),
             child: Column(children: [
-              const CircleAvatar(radius: 40, child: Icon(Icons.person, size: 40)),
-              const SizedBox(height: 10),
-              Text(_name.text.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-              Text(_job.text, style: const TextStyle(color: Colors.white70)),
-              const Divider(color: Colors.white24),
-              Text("ID: $proID", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              const CircleAvatar(radius: 30, child: Icon(Icons.person)),
+              Text(name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(job, style: const TextStyle(color: Colors.white70)),
             ]),
           ),
           SwitchListTile(
-            title: Text(isOnline ? "ONLINE" : "OFFLINE", style: TextStyle(color: isOnline ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+            title: const Text("Go Online to get Hired"),
             value: isOnline,
             onChanged: (v) async {
               SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('pro_status', v);
+              await prefs.setBool('pro_online', v);
               setState(() => isOnline = v);
             },
-          )
-        ]) : Column(children: [
-          TextField(controller: _name, decoration: const InputDecoration(labelText: "Name")),
-          TextField(controller: _job, decoration: const InputDecoration(labelText: "Job (e.g. Plumber)")),
-          ElevatedButton(onPressed: _save, child: const Text("Create Profile"))
+          ),
+          const Spacer(),
+          const Text("Recent Requests", style: TextStyle(fontWeight: FontWeight.bold)),
+          Card(child: ListTile(
+            title: const Text("Customer #9283"),
+            subtitle: const Text("Urgent Requirement"),
+            trailing: IconButton(icon: const Icon(Icons.call, color: Colors.green), onPressed: () => makeSecureCall("8888888888")), // Fixed Call
+          ))
         ]),
       ),
     );
@@ -327,7 +298,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
   late TabController _tab;
   String query = "";
   List products = [];
-  Map? onlinePro;
+  Map? pro;
 
   @override
   void initState() {
@@ -339,44 +310,51 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
   _fetch() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? pData = prefs.getString('trinity_products');
-    if (pData != null) products = json.decode(pData);
-    bool online = prefs.getBool('pro_status') ?? false;
-    if (online) {
-      onlinePro = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'id': prefs.getString('pro_id')};
-    } else {
-      onlinePro = null;
+    if (pData != null) setState(() => products = json.decode(pData));
+    
+    if (prefs.getBool('pro_online') ?? false) {
+      setState(() {
+        pro = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'phone': prefs.getString('myPhone')};
+      });
     }
-    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Trinity Market"),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch), IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))],
+        title: const Text("Marketplace"),
+        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () => handleLogout(context))],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
+          preferredSize: const Size.fromHeight(110),
           child: Column(children: [
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10),
               child: TextField(
                 onChanged: (v) => setState(() => query = v.toLowerCase()),
-                decoration: InputDecoration(hintText: "Search...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30))),
+                decoration: InputDecoration(hintText: "Search anything...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30))),
               ),
             ),
-            TabBar(controller: _tab, tabs: const [Tab(text: "Products"), Tab(text: "Professionals")]),
+            TabBar(controller: _tab, tabs: const [Tab(text: "Products"), Tab(text: "Hire Pros")]),
           ]),
         ),
       ),
       body: TabBarView(controller: _tab, children: [
-        ListView(children: products.where((p) => p['name'].toLowerCase().contains(query)).map((p) => Card(
-          child: ListTile(title: Text(p['name']), trailing: Text("₹${p['price']}")),
-        )).toList()),
+        // FIXED: Search Results
+        ListView(children: products.where((p) => p['name'].toLowerCase().contains(query)).map((p) => Card(child: ListTile(title: Text(p['name']), trailing: Text("₹${p['price']}")))).toList()),
+        
         ListView(children: [
-          if (onlinePro != null && onlinePro!['job'].toLowerCase().contains(query))
-            Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.person)), title: Text(onlinePro!['name']), subtitle: Text(onlinePro!['job']))),
-          if (onlinePro == null) const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("No Professionals online"))),
+          if (pro != null && (pro!['name'].toLowerCase().contains(query) || pro!['job'].toLowerCase().contains(query)))
+            Card(child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.engineering)),
+              title: Text(pro!['name']),
+              subtitle: Text(pro!['job']),
+              trailing: ElevatedButton(
+                onPressed: () => makeSecureCall(pro!['phone']), // Anonymous Call Logic
+                child: const Text("HIRE & CALL"),
+              ),
+            )),
+          if (pro == null) const Center(child: Text("No Professionals Online"))
         ]),
       ]),
     );
