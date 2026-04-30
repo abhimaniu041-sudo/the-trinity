@@ -1,5 +1,5 @@
 name: the_trinity
-description: A new Flutter project for Shopkeeping and Assembly.
+description: Hyperlocal Marketplace for Shops, Customers and Workers.
 version: 1.0.0+1
 
 environment:
@@ -8,10 +8,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.1.0
   google_fonts: ^6.1.0
   shared_preferences: ^2.2.2
-  image_picker: ^1.0.4  # Photo upload ke liye zaroori hai
+  image_picker: ^1.0.4
+  geolocator: ^10.1.0 # Location ke liye
 
 dev_dependencies:
   flutter_test:
