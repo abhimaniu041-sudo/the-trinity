@@ -6,14 +6,12 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'dart:io';
 import 'dart:convert';
-import 'dart:math';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const TrinityApp());
 }
 
-// --- PREMIUM THEME ENGINE ---
 class TrinityApp extends StatefulWidget {
   const TrinityApp({super.key});
   @override
@@ -21,7 +19,7 @@ class TrinityApp extends StatefulWidget {
 }
 
 class _TrinityAppState extends State<TrinityApp> {
-  ThemeMode _themeMode = ThemeMode.light;
+  ThemeMode _themeMode = ThemeMode.dark;
 
   void _toggleTheme() {
     setState(() {
@@ -36,82 +34,87 @@ class _TrinityAppState extends State<TrinityApp> {
       themeMode: _themeMode,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A237E), brightness: Brightness.light),
-        inputDecorationTheme: InputDecorationTheme(border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))),
-        cardTheme: CardTheme(elevation: 5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 5, backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.redAccent, brightness: Brightness.light),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        cardTheme: CardTheme(elevation: 5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), color: const Color(0xFF1E1E1E)),
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 5, backgroundColor: Color(0xFF1F1F1F), foregroundColor: Colors.white),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.redAccent, brightness: Brightness.dark),
+        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF151515),
+          elevation: 10,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        ),
       ),
       home: SplashScreen(toggleTheme: _toggleTheme, mode: _themeMode),
     );
   }
 }
 
-// --- GLOBAL UTILS ---
-Future<void> handleLogout(BuildContext context, VoidCallback toggleTheme) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.remove('userRole'); 
-  // Inventory and Profile data safe in local storage.
-  if (context.mounted) {
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => RoleSelectionPage(toggleTheme: toggleTheme)), (route) => false);
-  }
-}
-
-// Secured calling simulation
-Future<void> launchCaller(String number) async {
-  final Uri launchUri = Uri(scheme: 'tel', path: number);
-  if (await canLaunchUrl(launchUri)) {
-    await launchUrl(launchUri);
-  }
-}
-
-// --- SHARED APP BAR COMPONENT ---
+// --- SHARED UI COMPONENTS ---
 class DashboardHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback onTheme, onProfile;
   final ThemeMode mode;
   final String role;
-  const DashboardHeader({super.key, required this.title, required this.onTheme, required this.onProfile, required this.mode, required this.role});
+
+  const DashboardHeader({
+    super.key,
+    required this.title,
+    required this.onTheme,
+    required this.onProfile,
+    required this.mode,
+    required this.role,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5)),
       actions: [
-        IconButton(icon: const Icon(Icons.account_circle), onPressed: onProfile),
-        IconButton(icon: const Icon(Icons.settings), onPressed: () => _openSettings(context)),
+        IconButton(icon: const Icon(Icons.account_circle_outlined), onPressed: onProfile),
+        IconButton(
+          icon: const Icon(Icons.settings_outlined),
+          onPressed: () => _showSettings(context),
+        ),
       ],
     );
   }
 
-  void _openSettings(context) {
-    showModalBottomSheet(context: context, builder: (c) => Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+  void _showSettings(context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF151515),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (c) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const ListTile(title: Text("App Settings", style: TextStyle(fontWeight: FontWeight.bold))),
-          const Divider(),
+          const SizedBox(height: 10),
           ListTile(
-            leading: Icon(mode == ThemeMode.light ? Icons.dark_mode : Icons.light_mode),
+            leading: Icon(mode == ThemeMode.light ? Icons.dark_mode : Icons.light_mode, color: Colors.redAccent),
             title: Text(mode == ThemeMode.light ? "Switch to Dark Mode" : "Switch to Light Mode"),
-            onTap: () { onTheme(); Navigator.pop(context); },
+            onTap: () {
+              Navigator.pop(context);
+              onTheme();
+            },
           ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout"),
-            onTap: () => handleLogout(context, onTheme),
+            onTap: () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await prefs.remove('userRole');
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: onTheme)), (r) => false);
+            },
           ),
+          const SizedBox(height: 20),
         ],
       ),
-    ));
+    );
   }
+
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
@@ -127,36 +130,43 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
-  void initState() { super.initState(); _checkStatus(); }
-  _checkStatus() async {
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  _init() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? role = prefs.getString('userRole');
     await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      if (role != null) {
-        if (role == 'Shopkeeper') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ShopDashboard(toggleTheme: widget.toggleTheme, mode: widget.mode)));
-        if (role == 'Customer') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => CustomerDashboard(toggleTheme: widget.toggleTheme, mode: widget.mode)));
-        if (role == 'Professional') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ProfessionalDashboard(toggleTheme: widget.toggleTheme, mode: widget.mode)));
-      } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: widget.toggleTheme)));
-      }
+    if (!mounted) return;
+    if (role != null) {
+      if (role == 'Shopkeeper') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ShopDashboard(toggleTheme: widget.toggleTheme, mode: widget.mode)));
+      else if (role == 'Professional') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ProfessionalDashboard(toggleTheme: widget.toggleTheme, mode: widget.mode)));
+      else Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => CustomerDashboard(toggleTheme: widget.toggleTheme, mode: widget.mode)));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: widget.toggleTheme)));
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text("THE TRINITY", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.indigo)),
-          SizedBox(height: 10),
-          Text("Hyperlocal Superhub", style: TextStyle(color: Colors.grey)),
-        ]),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("THE TRINITY", style: TextStyle(fontSize: 50, fontWeight: FontWeight.w900, color: Colors.redAccent, letterSpacing: 8)),
+            const SizedBox(height: 10),
+            Container(width: 100, height: 2, color: Colors.redAccent.withOpacity(0.5)),
+          ],
+        ),
       ),
     );
   }
 }
 
-// --- ROLE SELECTION ---
+// --- ROLE SELECTION & LOGIN ---
 class RoleSelectionPage extends StatelessWidget {
   final VoidCallback toggleTheme;
   const RoleSelectionPage({super.key, required this.toggleTheme});
@@ -164,112 +174,220 @@ class RoleSelectionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        padding: const EdgeInsets.all(25),
-        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)], begin: Alignment.topCenter)),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Text("Welcome to Trinity", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 50),
-          _roleBtn(context, "Shopkeeper", Icons.storefront),
-          _roleBtn(context, "Customer", Icons.shopping_bag_rounded),
-          _roleBtn(context, "Professional", Icons.engineering_rounded),
-        ]),
+        width: double.infinity,
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Colors.black, Color(0xFF1A0000)], begin: Alignment.topCenter)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("SELECT IDENTITY", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
+            const SizedBox(height: 50),
+            _btn(context, "Shopkeeper", Icons.storefront_outlined),
+            _btn(context, "Customer", Icons.shopping_bag_outlined),
+            _btn(context, "Professional", Icons.engineering_outlined),
+          ],
+        ),
       ),
     );
   }
-  Widget _roleBtn(context, title, icon) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-    child: Card(
-      child: ListTile(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(role: title, toggleTheme: toggleTheme))),
-        leading: CircleAvatar(backgroundColor: Colors.indigo.withOpacity(0.1), child: Icon(icon, color: Colors.indigo)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: const Icon(Icons.arrow_forward_ios),
-      ),
-    ),
-  );
+
+  Widget _btn(context, String r, IconData i) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+        child: Card(
+          child: ListTile(
+            leading: Icon(i, color: Colors.redAccent),
+            title: Text(r, style: const TextStyle(fontWeight: FontWeight.bold)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => LoginPage(role: r, toggleTheme: toggleTheme))),
+          ),
+        ),
+      );
 }
 
-// --- LOGIN PAGE ---
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   final String role;
   final VoidCallback toggleTheme;
-  LoginPage({super.key, required this.role, required this.toggleTheme});
-  final _nC = TextEditingController();
-  final _oC = TextEditingController();
+  const LoginPage({super.key, required this.role, required this.toggleTheme});
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _idC = TextEditingController();
+  final _otpC = TextEditingController();
+  bool sent = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("$role Login")),
-      body: Padding(padding: const EdgeInsets.all(25), child: Column(children: [
-        const Text("Enter Email/Mobile and OTP", style: TextStyle(fontSize: 16)),
-        const SizedBox(height: 30),
-        TextField(controller: _nC, decoration: const InputDecoration(labelText: "Mobile or Email")),
-        const SizedBox(height: 15),
-        TextField(controller: _oC, decoration: const InputDecoration(labelText: "OTP (Demo: 123456)")),
-        const SizedBox(height: 30),
-        SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-          onPressed: () async {
-            if (_oC.text == "123456") {
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.setString('userRole', role);
-              await prefs.setString('user_id', _nC.text);
-              if (context.mounted) {
-                if (role == 'Shopkeeper') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => ShopDashboard(toggleTheme: toggleTheme, mode: ThemeMode.light)), (r) => false);
-                if (role == 'Customer') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => CustomerDashboard(toggleTheme: toggleTheme, mode: ThemeMode.light)), (r) => false);
-                if (role == 'Professional') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => ProfessionalDashboard(toggleTheme: toggleTheme, mode: ThemeMode.light)), (r) => false);
+      appBar: AppBar(title: Text("${widget.role} Login")),
+      body: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(children: [
+          TextField(controller: _idC, decoration: const InputDecoration(labelText: "Mobile or Email", border: OutlineInputBorder())),
+          const SizedBox(height: 20),
+          if (sent) TextField(controller: _otpC, decoration: const InputDecoration(labelText: "OTP (123456)", border: OutlineInputBorder())),
+          const SizedBox(height: 30),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 55)),
+            onPressed: () async {
+              if (!sent) {
+                setState(() => sent = true);
+              } else if (_otpC.text == "123456") {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.setString('userRole', widget.role);
+                if (!mounted) return;
+                if (widget.role == 'Shopkeeper') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => ShopDashboard(toggleTheme: widget.toggleTheme, mode: ThemeMode.dark)), (r) => false);
+                else if (widget.role == 'Professional') Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => ProfessionalDashboard(toggleTheme: widget.toggleTheme, mode: ThemeMode.dark)), (r) => false);
+                else Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => CustomerDashboard(toggleTheme: widget.toggleTheme, mode: ThemeMode.dark)), (r) => false);
               }
-            }
-          }, child: const Text("AUTHENTICATE"))),
-      ])),
+            },
+            child: Text(sent ? "VERIFY" : "GET OTP"),
+          )
+        ]),
+      ),
     );
   }
 }
 
-// --- SHARED PROFILE SHEET ---
-class ProfileSheet extends StatefulWidget {
-  final String role;
-  const ProfileSheet({super.key, required this.role});
+// --- 1. CUSTOMER DASHBOARD (AMAZON STYLE) ---
+class CustomerDashboard extends StatefulWidget {
+  final VoidCallback toggleTheme;
+  final ThemeMode mode;
+  const CustomerDashboard({super.key, required this.toggleTheme, required this.mode});
   @override
-  State<ProfileSheet> createState() => _ProfileSheetState();
+  State<CustomerDashboard> createState() => _CustomerDashboardState();
 }
 
-class _ProfileSheetState extends State<ProfileSheet> {
-  final _n = TextEditingController(), _p = TextEditingController(), _a = TextEditingController();
-  File? _img;
+class _CustomerDashboardState extends State<CustomerDashboard> with SingleTickerProviderStateMixin {
+  late TabController _tab;
+  String query = "";
+  List products = [];
+  Map? pro;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 2, vsync: this);
+    _load();
+  }
+
   _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _n.text = prefs.getString('${widget.role}_name') ?? "";
-      _p.text = prefs.getString('${widget.role}_phone') ?? "";
-      _a.text = prefs.getString('${widget.role}_addr') ?? "";
-      String? path = prefs.getString('${widget.role}_img'); if (path != null) _img = File(path);
-    });
+    String? data = prefs.getString('global_products');
+    if (data != null) setState(() => products = json.decode(data));
+    if (prefs.getBool('pro_status') ?? false) {
+      setState(() => pro = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'img': prefs.getString('pro_img')});
+    }
   }
+
   @override
-  Widget build(BuildContext context) => Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20), child: Column(mainAxisSize: MainAxisSize.min, children: [
-    GestureDetector(onTap: () async { final p = await ImagePicker().pickImage(source: ImageSource.gallery); if (p != null) setState(() => _img = File(p.path)); }, child: CircleAvatar(radius: 50, backgroundImage: _img != null ? FileImage(_img!) : null, child: _img == null ? const Icon(Icons.camera_alt) : null)),
-    TextField(controller: _n, decoration: const InputDecoration(labelText: "Name")),
-    TextField(controller: _p, decoration: const InputDecoration(labelText: "Mobile")),
-    TextField(controller: _a, decoration: const InputDecoration(labelText: "Address")),
-    const SizedBox(height: 20),
-    ElevatedButton(onPressed: () async {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('${widget.role}_name', _n.text);
-      await prefs.setString('${widget.role}_phone', _p.text);
-      await prefs.setString('${widget.role}_addr', _a.text);
-      if (_img != null) await prefs.setString('${widget.role}_img', _img!.path);
-      Navigator.pop(context, true);
-    }, child: const Text("SAVE PROFILE")),
-    const SizedBox(height: 20)
-  ]));
+  Widget build(BuildContext context) {
+    final filtered = products.where((p) => p['name'].toString().toLowerCase().contains(query.toLowerCase())).toList();
+    return Scaffold(
+      appBar: DashboardHeader(title: "TRINITY MARKET", onTheme: widget.toggleTheme, mode: widget.mode, role: 'cust', onProfile: _editProfile),
+      floatingActionButton: FloatingActionButton(backgroundColor: Colors.redAccent, onPressed: _openAI, child: const Icon(Icons.auto_awesome, color: Colors.white)),
+      body: SingleChildScrollView(
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: TextField(
+              onChanged: (v) => setState(() => query = v),
+              decoration: InputDecoration(
+                hintText: "Search Plumber, Taps, etc...",
+                prefixIcon: const Icon(Icons.search, color: Colors.redAccent),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+              ),
+            ),
+          ),
+          // Amazon Style Horizontal Sections
+          _sectionTitle("Your Recent Orders"),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: filtered.length,
+              itemBuilder: (c, i) => _amazonSmallCard(filtered[i]),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TabBar(controller: _tab, indicatorColor: Colors.redAccent, labelColor: Colors.redAccent, tabs: const [Tab(text: "PRODUCTS"), Tab(text: "EXPERTS")]),
+          SizedBox(
+            height: 400,
+            child: TabBarView(controller: _tab, children: [
+              ListView.builder(itemCount: filtered.length, itemBuilder: (c, i) => _productCard(filtered[i])),
+              _expertView(),
+            ]),
+          )
+        ]),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String t) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+    child: Row(children: [Text(t, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const Spacer(), const Icon(Icons.arrow_forward, size: 18)]),
+  );
+
+  Widget _amazonSmallCard(Map p) => Container(
+    width: 100, margin: const EdgeInsets.only(left: 15),
+    decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)),
+    child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(File(p['imgs'][0]), fit: BoxFit.cover)),
+  );
+
+  Widget _productCard(Map p) => Card(
+    margin: const EdgeInsets.all(10),
+    child: ListTile(
+      onTap: () => _buyFlow(p),
+      leading: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(p['imgs'][0]), width: 60, height: 60, fit: BoxFit.cover)),
+      title: Text(p['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text("₹${p['price']} | ⭐ 4.8", style: const TextStyle(color: Colors.redAccent)),
+      trailing: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent), onPressed: () => _buyFlow(p), child: const Text("BUY", style: TextStyle(color: Colors.white))),
+    ),
+  );
+
+  Widget _expertView() => ListView(children: [
+    if (pro != null) Card(
+      margin: const EdgeInsets.all(15),
+      child: ListTile(
+        leading: CircleAvatar(backgroundImage: FileImage(File(pro!['img']))),
+        title: Text(pro!['name']),
+        subtitle: const Text("Verified Professional"),
+        trailing: ElevatedButton(onPressed: _schedule, child: const Text("HIRE")),
+      ),
+    )
+  ]);
+
+  void _buyFlow(Map p) {
+    showModalBottomSheet(context: context, backgroundColor: const Color(0xFF151515), builder: (c) => Padding(
+      padding: const EdgeInsets.all(25),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text("Order Tracking", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        const SizedBox(height: 20),
+        const LinearProgressIndicator(value: 0.3, color: Colors.green, backgroundColor: Colors.white10),
+        const Padding(padding: EdgeInsets.all(15), child: Text("Status: Merchant Packing Your Order")),
+        ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("CONFIRM PURCHASE")),
+      ]),
+    ));
+  }
+
+  void _schedule() {
+    showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 7)));
+  }
+
+  void _editProfile() {
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => ProfileSheet(role: 'cust'));
+  }
+
+  void _openAI() {
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => Container(
+      height: 400, padding: const EdgeInsets.all(20),
+      child: const Column(children: [Text("AI Assistant", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent)), Divider(), Expanded(child: Center(child: Text("Hello! How can I help you today?")))]),
+    ));
+  }
 }
 
-// --- 1. SHOPKEEPER DASHBOARD (DISCOUNT + MULTI-IMAGE + STOCK + LEADS) ---
+// --- 2. SHOPKEEPER DASHBOARD ---
 class ShopDashboard extends StatefulWidget {
   final VoidCallback toggleTheme;
   final ThemeMode mode;
@@ -279,103 +397,70 @@ class ShopDashboard extends StatefulWidget {
 }
 
 class _ShopDashboardState extends State<ShopDashboard> {
-  final _dukaanC = TextEditingController(), _sLocC = TextEditingController(), _pNC = TextEditingController(), _pPC = TextEditingController(), _pDC = TextEditingController(), _pQC = TextEditingController();
-  final picker = ImagePicker();
-  File? _dukaanPhoto;
-  List<String> _productImages = [];
-  List products = [], leads = [];
-  bool hasProfile = false;
+  List products = [];
+  final _n = TextEditingController(), _p = TextEditingController(), _d = TextEditingController(), _q = TextEditingController();
+  List<String> _imgs = [];
 
   @override
   void initState() { super.initState(); _load(); }
   _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _dukaanC.text = prefs.getString('shop_name') ?? "";
-      if (prefs.getString('shop_photo') != null) _dukaanPhoto = File(prefs.getString('shop_photo')!);
-      if (_dukaanC.text.isNotEmpty) hasProfile = true;
-      String? data = prefs.getString('shop_products');
-      if (data != null) products = json.decode(data);
-      String? lData = prefs.getString('shop_leads');
-      if (lData != null) leads = json.decode(lData);
-    });
+    String? data = prefs.getString('global_products');
+    if (data != null) setState(() => products = json.decode(data));
   }
 
-  _pickDukaanPhoto() async {
-    final p = await picker.pickImage(source: ImageSource.gallery);
-    if (p != null) setState(() => _dukaanPhoto = File(p.path));
-  }
-  _pickProductsImages() async {
-    final p = await picker.pickMultiImage();
-    if (p.isNotEmpty) setState(() => _productImages = p.map((f)=>f.path).toList());
-  }
-
-  _saveProfile() async {
-    if (_dukaanPhoto == null) return;
+  _save() async {
+    if (_n.text.isEmpty || _imgs.isEmpty) return;
+    products.add({'name': _n.text, 'price': _p.text, 'disc': _d.text, 'qty': _q.text, 'imgs': _imgs});
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('shop_name', _dukaanC.text);
-    await prefs.setString('shop_loc', _sLocC.text);
-    await prefs.setString('shop_photo', _dukaanPhoto!.path);
+    await prefs.setString('global_products', json.encode(products));
+    setState(() { _n.clear(); _p.clear(); _d.clear(); _q.clear(); _imgs = []; });
     _load();
-  }
-
-  _saveProduct() async {
-    if (_pNC.text.isEmpty || _productImages.isEmpty) return;
-    int disc = int.tryParse(_pDC.text) ?? 0;
-    products.add({'name': _pNC.text, 'price': _pPC.text, 'disc': disc, 'stock': _pQC.text, 'imgs': _productImages, 'shop': _dukaanC.text});
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('shop_products', json.encode(products));
-    setState(() { _pNC.clear(); _pPC.clear(); _pDC.clear(); _pQC.clear(); _productImages = []; });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: DashboardHeader(title: "Trinity Store", onTheme: widget.toggleTheme, mode: widget.mode, role: 'shop', onProfile: _editProfile),
-      floatingActionButton: FloatingActionButton(onPressed: () => _openAI(context), child: const Icon(Icons.auto_awesome)),
-      body: SingleChildScrollView(padding: const EdgeInsets.all(15), child: !hasProfile ? _profileSetup() : _mainView()),
+      appBar: DashboardHeader(title: "CONSOLE", onTheme: widget.toggleTheme, mode: widget.mode, role: 'shop', onProfile: _editProfile),
+      body: ListView(padding: const EdgeInsets.all(20), children: [
+        const Text("Add New Catalog", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        const SizedBox(height: 15),
+        GestureDetector(
+          onTap: () async {
+            final p = await ImagePicker().pickMultiImage();
+            if (p.isNotEmpty) setState(() => _imgs = p.map((f)=>f.path).toList());
+          },
+          child: Container(
+            height: 100, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)),
+            child: _imgs.isEmpty ? const Icon(Icons.add_a_photo, color: Colors.redAccent) : ListView(scrollDirection: Axis.horizontal, children: _imgs.map((f)=>Image.file(File(f))).toList()),
+          ),
+        ),
+        TextField(controller: _n, decoration: const InputDecoration(labelText: "Product Name")),
+        Row(children: [
+          Expanded(child: TextField(controller: _p, decoration: const InputDecoration(labelText: "Price"))),
+          Expanded(child: TextField(controller: _d, decoration: const InputDecoration(labelText: "Disc%"))),
+          Expanded(child: TextField(controller: _q, decoration: const InputDecoration(labelText: "Stock"))),
+        ]),
+        const SizedBox(height: 15),
+        ElevatedButton(onPressed: _save, style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent), child: const Text("LIST PRODUCT")),
+        const Divider(height: 50),
+        ...products.asMap().entries.map((e) => Card(child: ListTile(
+          leading: Image.file(File(e.value['imgs'][0]), width: 40),
+          title: Text(e.value['name']),
+          trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () async {
+            products.removeAt(e.key);
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.setString('global_products', json.encode(products));
+            _load();
+          }),
+        ))).toList()
+      ]),
     );
   }
-
-  Widget _profileSetup() => Column(children: [
-    const Text("Register Your Shop", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-    GestureDetector(onTap: _pickDukaanPhoto, child: CircleAvatar(radius: 60, backgroundImage: _dukaanPhoto != null ? FileImage(_dukaanPhoto!) : null, child: _dukaanPhoto == null ? const Icon(Icons.add_a_photo) : null)),
-    TextField(controller: _dukaanC, decoration: const InputDecoration(hintText: "Dukaan Name")),
-    TextField(controller: _sLocC, decoration: const InputDecoration(hintText: "Full Location")),
-    ElevatedButton(onPressed: _saveProfile, child: const Text("Create Profile"))
-  ]);
-
-  Widget _mainView() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: Colors.indigo[50], borderRadius: BorderRadius.circular(15)), child: Row(children: [
-      CircleAvatar(backgroundImage: _dukaanPhoto != null ? FileImage(_dukaanPhoto!) : null),
-      const SizedBox(width: 10), Text(_dukaanC.text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))
-    ])),
-    const SizedBox(height: 20),
-    const Text("Add New Inventory", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-    const SizedBox(height: 10),
-    GestureDetector(onTap: _pickProductsImages, child: Container(height: 80, width: double.infinity, color: Colors.grey[200], child: _productImages.isEmpty ? const Icon(Icons.add_photo_alternate) : ListView(scrollDirection: Axis.horizontal, children: _productImages.map((f)=>Image.file(File(f))).toList()))),
-    TextField(controller: _pNC, decoration: const InputDecoration(hintText: "Item Name")),
-    Row(children: [
-      Expanded(child: TextField(controller: _pPC, decoration: const InputDecoration(hintText: "Price"))),
-      Expanded(child: TextField(controller: _pDC, decoration: const InputDecoration(hintText: "Discount %"))),
-      Expanded(child: TextField(controller: _pQC, decoration: const InputDecoration(hintText: "Stock Qty"))),
-    ]),
-    ElevatedButton(onPressed: _saveProduct, child: const Text("Save Product")),
-    const Divider(),
-    const Text("Active Inventory:", style: TextStyle(fontWeight: FontWeight.bold)),
-    ...products.asMap().entries.map((e) => Card(child: ListTile(leading: Image.file(File(e.value['imgs'][0]), width: 40, fit: BoxFit.cover), title: Text("${e.value['name']} (Qty: ${e.value['stock']})"), trailing: Text("₹${e.value['price']}")))).toList(),
-    const Divider(),
-    const Text("New Orders/Leads:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-    ...leads.map((l) => Card(color: Colors.green[50], child: ListTile(title: Text("Item: ${l['item']}"), subtitle: Text("Customer: ${l['cust']}\nAddr: ${l['addr']}")))).toList()
-  ]);
-
-  void _editProfile() async {
-     bool? res = await showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => const ProfileSheet(role: 'shop'));
-     if (res == true) _load();
-  }
+  void _editProfile() => showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => ProfileSheet(role: 'shop'));
 }
 
-// --- 2. PROFESSIONAL DASHBOARD (ID CARD, AVAILABILITY, LEADS) ---
+// --- 3. PROFESSIONAL DASHBOARD ---
 class ProfessionalDashboard extends StatefulWidget {
   final VoidCallback toggleTheme;
   final ThemeMode mode;
@@ -385,61 +470,4 @@ class ProfessionalDashboard extends StatefulWidget {
 }
 
 class _ProfessionalDashboardState extends State<ProfessionalDashboard> {
-  final _nameC = TextEditingController(), _jtC = TextEditingController();
-  File? _photo; String name = "", job = "", id = "";
-  bool hasProfile = false, online = false, leadAccept = false;
-
-  @override
-  void initState() { super.initState(); _load(); }
-  _load() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      name = prefs.getString('pro_name') ?? ""; job = prefs.getString('pro_job') ?? "";
-      id = prefs.getString('user_id') ?? ""; online = prefs.getBool('pro_status') ?? false;
-      if (prefs.getString('pro_photo') != null) _photo = File(prefs.getString('pro_photo')!);
-      if (name.isNotEmpty) hasProfile = true;
-    });
-  }
-
-  _saveProfile() async {
-    if (_nameC.text.isEmpty || _jtC.text.isEmpty) return;
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pro_name', _nameC.text);
-    await prefs.setString('pro_job', _jtC.text);
-    if (_photo != null) await prefs.setString('pro_photo', _photo!.path);
-    _load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: DashboardHeader(title: "Partner Panel", onTheme: widget.toggleTheme, mode: widget.mode, role: 'pro', onProfile: _editProfile),
-      floatingActionButton: FloatingActionButton(onPressed: () => _openAI(context), child: const Icon(Icons.auto_awesome)),
-      body: SingleChildScrollView(padding: const EdgeInsets.all(15), child: !hasProfile ? _profileSetup() : _mainProView()),
-    );
-  }
-
-  Widget _profileSetup() => Column(children: [
-    const Text("Expert Profile Setup", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-    GestureDetector(onTap: () async {
-      final p = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (p != null) setState(() => _photo = File(p.path));
-    }, child: CircleAvatar(radius: 60, backgroundImage: _photo != null ? FileImage(_photo!) : null, child: _photo == null ? const Icon(Icons.add_a_photo) : null)),
-    TextField(controller: _nameC, decoration: const InputDecoration(hintText: "Full Name")),
-    TextField(controller: _jtC, decoration: const InputDecoration(hintText: "Job Title (Plumber, Electrician)")),
-    ElevatedButton(onPressed: _saveProfile, child: const Text("Go Live"))
-  ]);
-
-  Widget _mainProView() => Column(children: [
-    Card(color: Colors.indigo, child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-      CircleAvatar(radius: 40, backgroundImage: _photo != null ? FileImage(_photo!) : null),
-      Text(name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-      Text(job.toUpperCase(), style: const TextStyle(color: Colors.white70)),
-      const Divider(color: Colors.white24),
-      Text("ID: $id", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-    ]))),
-    SwitchListTile(title: Text(online ? "YOU ARE ONLINE (Lead Mode)" : "YOU ARE OFFLINE", style: TextStyle(color: online ? Colors.green : Colors.red, fontWeight: FontWeight.bold)), value: online, onChanged: (v) async {
-       SharedPreferences prefs = await SharedPreferences.getInstance();
-       await prefs.setBool('pro_status', v); setState(() => online = v);
-    }),
-    Card(color: Colors.green[50], child: ListTile(title: const Text("New Service Request"), subtitle: const Text("Sector 22 Chandigarh | Tap Fitting"),
+  bool online = false
