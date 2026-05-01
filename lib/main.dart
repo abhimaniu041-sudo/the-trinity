@@ -51,26 +51,28 @@ class _TrinityAppState extends State<TrinityApp> {
   }
 }
 
-// --- DASHBOARD HEADER ---
+// --- SHARED HEADER COMPONENT ---
 class DashboardHeader extends StatelessWidget implements PreferredSizeWidget {
-  final String title, role;
+  final String title;
   final VoidCallback onTheme, onProfile;
   final ThemeMode mode;
 
-  const DashboardHeader({super.key, required this.title, required this.onTheme, required this.onProfile, required this.mode, required this.role});
+  const DashboardHeader({super.key, required this.title, required this.onTheme, required this.onProfile, required this.mode});
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, color: Colors.amberAccent)),
       actions: [
         IconButton(icon: const Icon(Icons.account_circle_outlined, color: Colors.amberAccent), onPressed: onProfile),
-        IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () => _openSettings(context)),
+        IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () => _showSettings(context)),
       ],
     );
   }
 
-  void _openSettings(context) {
+  void _showSettings(context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
@@ -86,7 +88,7 @@ class DashboardHeader extends StatelessWidget implements PreferredSizeWidget {
         ),
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.redAccent),
-          title: const Text("Logout from Trinity", style: TextStyle(color: Colors.white)),
+          title: const Text("Logout from System", style: TextStyle(color: Colors.white)),
           onTap: () async {
             SharedPreferences prefs = await SharedPreferences.getInstance();
             await prefs.remove('userRole');
@@ -130,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) => const Scaffold(body: Center(child: Text("THE TRINITY", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.amberAccent, letterSpacing: 8))));
 }
 
-// --- CUSTOMER DASHBOARD (FIXED BLANK SCREEN) ---
+// --- CUSTOMER DASHBOARD ---
 class CustomerDashboard extends StatefulWidget {
   final VoidCallback toggleTheme;
   final ThemeMode mode;
@@ -146,23 +148,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
   Map? pro;
 
   @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 2, vsync: this);
-    _load();
-  }
-
+  void initState() { super.initState(); _tab = TabController(length: 2, vsync: this); _load(); }
   _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? data = prefs.getString('global_products');
     setState(() {
       if (data != null) products = json.decode(data);
       if (prefs.getBool('pro_status') ?? false) {
-        pro = {
-          'name': prefs.getString('pro_name') ?? "Expert",
-          'job': prefs.getString('pro_job') ?? "Specialist",
-          'img': prefs.getString('pro_img'),
-        };
+        pro = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'img': prefs.getString('pro_img')};
       } else { pro = null; }
     });
   }
@@ -171,7 +164,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
   Widget build(BuildContext context) {
     final filtered = products.where((p) => p['name'].toString().toLowerCase().contains(query.toLowerCase())).toList();
     return Scaffold(
-      appBar: DashboardHeader(title: "TRINITY MARKET", onTheme: widget.toggleTheme, mode: widget.mode, role: 'cust', onProfile: _editProfile),
+      appBar: DashboardHeader(title: "TRINITY MARKET", onTheme: widget.toggleTheme, mode: widget.mode, onProfile: _editProfile),
       floatingActionButton: FloatingActionButton(backgroundColor: Colors.amberAccent, onPressed: _openAI, child: const Icon(Icons.auto_awesome, color: Color(0xFF1A1A2E))),
       body: Column(children: [
         Padding(
@@ -189,7 +182,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
     );
   }
 
-  Widget _productList(List list) => list.isEmpty ? const Center(child: Text("No items available")) : ListView.builder(itemCount: list.length, itemBuilder: (c, i) => Card(margin: const EdgeInsets.all(10), child: ListTile(
+  Widget _productList(List list) => list.isEmpty ? const Center(child: Text("No products found")) : ListView.builder(itemCount: list.length, itemBuilder: (c, i) => Card(margin: const EdgeInsets.all(10), child: ListTile(
     onTap: () => _buyFlow(list[i]),
     leading: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(list[i]['imgs'][0]), width: 60, height: 60, fit: BoxFit.cover)),
     title: Text(list[i]['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
@@ -198,6 +191,140 @@ class _CustomerDashboardState extends State<CustomerDashboard> with SingleTicker
   )));
 
   Widget _expertList() => ListView(children: [
-    if (pro != null && (pro!['name'].toLowerCase().contains(query.toLowerCase()) || pro!['job'].toLowerCase().contains(query.toLowerCase())))
-      Card(margin: const EdgeInsets.all(15), child: ListTile(leading: CircleAvatar(backgroundImage: FileImage(File(pro!['img']))), title: Text(pro!['name'], style: const TextStyle(color: Colors.white)), subtitle: Text(pro!['job'], style: const TextStyle(color: Colors.white70)), trailing: ElevatedButton(onPressed: _schedule, child: const Text("HIRE"))))
-    else const Center(child: Padding(padding: EdgeInsets.all
+    if (pro != null) Card(margin: const EdgeInsets.all(15), child: ListTile(leading: CircleAvatar(backgroundImage: FileImage(File(pro!['img']))), title: Text(pro!['name'], style: const TextStyle(color: Colors.white)), subtitle: Text(pro!['job'], style: const TextStyle(color: Colors.white70)), trailing: ElevatedButton(onPressed: _schedule, child: const Text("HIRE"))))
+    else const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("No experts online")))
+  ]);
+
+  void _buyFlow(Map p) {
+    showModalBottomSheet(context: context, backgroundColor: const Color(0xFF1A1A2E), builder: (c) => Padding(padding: const EdgeInsets.all(25), child: Column(mainAxisSize: MainAxisSize.min, children: [const Text("Order Tracking", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.amberAccent)), const SizedBox(height: 10), const LinearProgressIndicator(value: 0.3, color: Colors.green), const Text("Packing your order...", style: TextStyle(color: Colors.white70)), ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("CONFIRM"))])));
+  }
+
+  void _schedule() { showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 7))); }
+  void _editProfile() async { bool? res = await showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => const ProfileSheet(role: 'cust')); if(res == true) _load(); }
+  void _openAI() { showModalBottomSheet(context: context, builder: (c) => Container(height: 300, padding: const EdgeInsets.all(20), child: const Center(child: Text("AI Assistant: How can I help you?", style: TextStyle(color: Colors.amberAccent))))); }
+}
+
+// --- SHOPKEEPER DASHBOARD ---
+class ShopDashboard extends StatefulWidget {
+  final VoidCallback toggleTheme;
+  final ThemeMode mode;
+  const ShopDashboard({super.key, required this.toggleTheme, required this.mode});
+  @override
+  State<ShopDashboard> createState() => _ShopDashboardState();
+}
+
+class _ShopDashboardState extends State<ShopDashboard> {
+  List products = [];
+  final _n = TextEditingController(), _p = TextEditingController(), _d = TextEditingController(), _q = TextEditingController();
+  List<String> _imgs = [];
+
+  @override
+  void initState() { super.initState(); _load(); }
+  _load() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? data = prefs.getString('global_products');
+    if (data != null) setState(() => products = json.decode(data));
+  }
+
+  _save() async {
+    if (_n.text.isEmpty || _imgs.isEmpty) return;
+    products.add({'name': _n.text, 'price': _p.text, 'disc': _d.text, 'qty': _q.text, 'imgs': _imgs});
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('global_products', json.encode(products));
+    setState(() { _n.clear(); _p.clear(); _d.clear(); _q.clear(); _imgs = []; });
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: DashboardHeader(title: "SHOP CONSOLE", onTheme: widget.toggleTheme, mode: widget.mode, onProfile: _editProfile),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      const Text("Add New Catalog", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amberAccent)),
+      GestureDetector(onTap: () async {
+        final p = await ImagePicker().pickMultiImage();
+        if (p.isNotEmpty) setState(() => _imgs = p.map((f)=>f.path).toList());
+      }, child: Container(height: 120, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)), child: _imgs.isEmpty ? const Icon(Icons.add_a_photo, color: Colors.amberAccent, size: 40) : ListView(scrollDirection: Axis.horizontal, children: _imgs.map((f)=>Padding(padding: const EdgeInsets.all(5), child: Image.file(File(f)))).toList()))),
+      TextField(controller: _n, decoration: const InputDecoration(labelText: "Product Name")),
+      Row(children: [Expanded(child: TextField(controller: _p, decoration: const InputDecoration(labelText: "Price"))), Expanded(child: TextField(controller: _d, decoration: const InputDecoration(labelText: "Disc%"))), Expanded(child: TextField(controller: _q, decoration: const InputDecoration(labelText: "Stock")))]),
+      ElevatedButton(onPressed: _save, style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent), child: const Text("LIST PRODUCT", style: TextStyle(color: Color(0xFF1A1A2E)))),
+      const Divider(height: 40),
+      ...products.asMap().entries.map((e) => Card(child: ListTile(leading: Image.file(File(e.value['imgs'][0]), width: 40), title: Text(e.value['name'], style: const TextStyle(color: Colors.white)), trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () async { products.removeAt(e.key); SharedPreferences prefs = await SharedPreferences.getInstance(); await prefs.setString('global_products', json.encode(products)); _load(); })))).toList()
+    ]),
+  );
+  void _editProfile() async { bool? res = await showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => const ProfileSheet(role: 'shop')); if(res == true) _load(); }
+}
+
+// --- PROFESSIONAL DASHBOARD ---
+class ProfessionalDashboard extends StatefulWidget {
+  final VoidCallback toggleTheme;
+  final ThemeMode mode;
+  const ProfessionalDashboard({super.key, required this.toggleTheme, required this.mode});
+  @override
+  State<ProfessionalDashboard> createState() => _ProfessionalDashboardState();
+}
+
+class _ProfessionalDashboardState extends State<ProfessionalDashboard> {
+  bool online = false;
+  String name = "Partner";
+  File? img;
+
+  @override
+  void initState() { super.initState(); _load(); }
+  _load() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      name = prefs.getString('pro_name') ?? "Set Profile";
+      online = prefs.getBool('pro_status') ?? false;
+      String? p = prefs.getString('pro_img'); if (p != null) img = File(p);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: DashboardHeader(title: "PARTNER HUB", onTheme: widget.toggleTheme, mode: widget.mode, onProfile: _editProfile),
+    body: Column(children: [
+      Container(margin: const EdgeInsets.all(20), padding: const EdgeInsets.all(25), decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF0D0D1A)]), borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.amberAccent.withOpacity(0.5))), child: Column(children: [
+        CircleAvatar(radius: 50, backgroundImage: img != null ? FileImage(img!) : null, child: img == null ? const Icon(Icons.person, size: 40) : null),
+        const SizedBox(height: 10),
+        Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+        const Text("TRINITY VERIFIED EXPERT", style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+      ])),
+      SwitchListTile(
+        title: Text(online ? "YOU ARE ONLINE" : "OFFLINE", style: TextStyle(color: online ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+        value: online, activeColor: Colors.green,
+        onChanged: (v) async {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('pro_status', v);
+          setState(() { online = v; });
+        },
+      ),
+      const Padding(padding: EdgeInsets.all(20), child: TextField(decoration: InputDecoration(labelText: "Enter Completion OTP", border: OutlineInputBorder())))
+    ]),
+  );
+  void _editProfile() async { bool? res = await showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => const ProfileSheet(role: 'pro')); if(res == true) _load(); }
+}
+
+// --- PROFILE SHEET ---
+class ProfileSheet extends StatefulWidget {
+  final String role;
+  const ProfileSheet({super.key, required this.role});
+  @override
+  State<ProfileSheet> createState() => _ProfileSheetState();
+}
+
+class _ProfileSheetState extends State<ProfileSheet> {
+  final _n = TextEditingController(), _p = TextEditingController(), _a = TextEditingController(); File? _img;
+  @override
+  void initState() { super.initState(); _load(); }
+  _load() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _n.text = prefs.getString('${widget.role}_name') ?? "";
+      _p.text = prefs.getString('${widget.role}_phone') ?? "";
+      _a.text = prefs.getString('${widget.role}_addr') ?? "";
+      String? path = prefs.getString('${widget.role}_img'); if (path != null) _img = File(path);
+    });
+  }
+  @override
+  Widget build(BuildContext context) => Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20), child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    const Text("EDIT PROFILE", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.amberAccent)),
