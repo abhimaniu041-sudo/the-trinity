@@ -9,19 +9,22 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # --- Data & Logic ---
-  shared_preferences: ^2.2.2      # Data save karne ke liye
-  url_launcher: ^6.2.5           # Call karne ke liye
+  # --- Data Storage & Logic ---
+  shared_preferences: ^2.2.2      # Profile aur login data save karne ke liye
+  url_launcher: ^6.2.5           # Customer/Pro ko call karne ke liye
 
-  # --- Media & UI ---
-  image_picker: ^1.0.4           # Gallery/Camera se photo lene ke liye
-  photo_view: ^0.14.0            # Product images zoom karne ke liye
-  google_fonts: ^6.1.0           # Premium fonts ke liye
+  # --- Media & UI Features ---
+  image_picker: ^1.0.4           # Multiple product photos aur profile photo ke liye
+  photo_view: ^0.14.0            # Product images zoom aur full-screen visit ke liye
+  google_fonts: ^6.1.0           # Premium enterprise typography ke liye
+
+  # --- Design Helpers ---
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
