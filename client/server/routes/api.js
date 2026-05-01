@@ -1,24 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
+const Product = require('../models/Product'); // Ensure you have a Product model
 
-// Product list karne ke liye
-router.post('/add-product', async (req, res) => {
+// 1. Get All Products (Customer Dashboard ke liye)
+router.get('/products', async (req, res) => {
     try {
-        const { shopId, title, price, description, photos } = req.body;
-        const newProduct = new Product({ shopId, title, price, description, photos });
-        await newProduct.save();
-        res.status(201).json({ message: "Product added!", product: newProduct });
+        const products = await Product.find().sort({ createdAt: -1 });
+        res.json(products);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Private Calling Bridge
-router.post('/secure-call', (req, res) => {
-    const { from, to } = req.body;
-    // Bridge logic here
-    res.json({ success: true, message: "Connecting via secure line..." });
+// 2. Add New Product (Shopkeeper Console ke liye)
+router.post('/products/add', async (req, res) => {
+    try {
+        const newProduct = new Product(req.body);
+        await newProduct.save();
+        res.status(200).json({ message: "Product Synced to Cloud!" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router;
