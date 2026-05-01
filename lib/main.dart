@@ -20,106 +20,29 @@ class TrinityApp extends StatefulWidget {
 
 class _TrinityAppState extends State<TrinityApp> {
   ThemeMode _themeMode = ThemeMode.dark;
-
-  void _toggleTheme() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
+  void _toggleTheme() => setState(() => _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-      ),
+      theme: ThemeData(useMaterial3: true, brightness: Brightness.light, colorScheme: ColorScheme.fromSeed(seedColor: Colors.red)),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0A0A0A),
         colorScheme: const ColorScheme.dark(primary: Colors.redAccent, surface: Color(0xFF121212)),
-        cardTheme: CardTheme(
-          color: const Color(0xFF1A1A1A),
-          elevation: 10,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        ),
+        cardTheme: CardTheme(color: const Color(0xFF1A1A1A), elevation: 10, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
       ),
-      home: SplashScreen(toggleTheme: _toggleTheme),
-    );
-  }
-}
-
-// --- SHARED PROFILE LOGIC ---
-class ProfileManager extends StatefulWidget {
-  final String role;
-  const ProfileManager({super.key, required this.role});
-  @override
-  State<ProfileManager> createState() => _ProfileManagerState();
-}
-
-class _ProfileEditorState extends State<ProfileManager> {
-  final _n = TextEditingController(), _p = TextEditingController(), _a = TextEditingController();
-  File? _img;
-
-  @override
-  void initState() { super.initState(); _load(); }
-  _load() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _n.text = prefs.getString('${widget.role}_name') ?? "";
-      _p.text = prefs.getString('${widget.role}_phone') ?? "";
-      _a.text = prefs.getString('${widget.role}_addr') ?? "";
-      String? path = prefs.getString('${widget.role}_img');
-      if (path != null) _img = File(path);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
-      child: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text("Profile Settings", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent)),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () async {
-              final p = await ImagePicker().pickImage(source: ImageSource.gallery);
-              if (p != null) setState(() => _img = File(p.path));
-            },
-            child: CircleAvatar(radius: 55, backgroundColor: Colors.white10, backgroundImage: _img != null ? FileImage(_img!) : null, child: _img == null ? const Icon(Icons.add_a_photo, color: Colors.redAccent) : null),
-          ),
-          TextField(controller: _n, decoration: const InputDecoration(labelText: "Full Name")),
-          TextField(controller: _p, decoration: const InputDecoration(labelText: "Phone Number")),
-          TextField(controller: _a, decoration: const InputDecoration(labelText: "Full Address")),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50)),
-            onPressed: () async {
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.setString('${widget.role}_name', _n.text);
-              await prefs.setString('${widget.role}_phone', _p.text);
-              await prefs.setString('${widget.role}_addr', _a.text);
-              if (_img != null) await prefs.setString('${widget.role}_img', _img!.path);
-              Navigator.pop(context, true);
-            },
-            child: const Text("UPDATE PROFILE"),
-          ),
-          const SizedBox(height: 30),
-        ]),
-      ),
+      home: const SplashScreen(),
     );
   }
 }
 
 // --- SPLASH SCREEN ---
 class SplashScreen extends StatefulWidget {
-  final VoidCallback toggleTheme;
-  const SplashScreen({super.key, required this.toggleTheme});
+  const SplashScreen({super.key});
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -132,70 +55,116 @@ class _SplashScreenState extends State<SplashScreen> {
     String? role = prefs.getString('userRole');
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
-    if (role == 'Shopkeeper') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ShopDashboard(toggleTheme: widget.toggleTheme)));
-    else if (role == 'Professional') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => ProDashboard(toggleTheme: widget.toggleTheme)));
-    else if (role == 'Customer') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => CustomerDashboard(toggleTheme: widget.toggleTheme)));
-    else Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => RoleSelectionPage(toggleTheme: widget.toggleTheme)));
+    if (role != null) {
+      if (role == 'Shopkeeper') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const ShopDashboard()));
+      else if (role == 'Professional') Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const ProDashboard()));
+      else Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const CustomerDashboard()));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const RoleSelectionPage()));
+    }
   }
   @override
-  Widget build(BuildContext context) => Scaffold(body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Text("THE TRINITY", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.redAccent, letterSpacing: 4)), const Text("POWERED BY ABHIMANIU", style: TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 2))])));
+  Widget build(BuildContext context) => Scaffold(body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Text("THE TRINITY", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.redAccent, letterSpacing: 5)), const Text("ULTIMATE BUILD v2.0", style: TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 2))])));
 }
 
-// --- ROLE SELECTION ---
-class RoleSelectionPage extends StatelessWidget {
-  final VoidCallback toggleTheme;
-  const RoleSelectionPage({super.key, required this.toggleTheme});
+// --- DASHBOARD ACTIONS (GLOBAL) ---
+class DashboardHeader extends StatelessWidget implements PreferredSizeWidget {
+  final String title, role;
+  const DashboardHeader({super.key, required this.title, required this.role});
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(gradient: LinearGradient(colors: [Colors.black, Color(0xFF300000)], begin: Alignment.topCenter)),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Text("Welcome Boss", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 50),
-        _btn(context, "Shopkeeper", Icons.storefront),
-        _btn(context, "Customer", Icons.shopping_bag),
-        _btn(context, "Professional", Icons.engineering),
+  Widget build(BuildContext context) => AppBar(
+    title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+    actions: [
+      IconButton(icon: const Icon(Icons.person_outline), onPressed: () => showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => ProfileSheet(role: role))),
+      IconButton(icon: const Icon(Icons.settings), onPressed: () => _openSettings(context)),
+    ],
+  );
+  _openSettings(context) => showModalBottomSheet(context: context, builder: (c) => Column(mainAxisSize: MainAxisSize.min, children: [
+    ListTile(leading: const Icon(Icons.history), title: const Text("Transaction History")),
+    ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text("Logout"), onTap: () async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove('userRole');
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => const RoleSelectionPage()), (r) => false);
+    })
+  ]));
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+// --- 1. CUSTOMER DASHBOARD (TRACKING & BOOKING) ---
+class CustomerDashboard extends StatefulWidget {
+  const CustomerDashboard({super.key});
+  @override
+  State<CustomerDashboard> createState() => _CustomerDashboardState();
+}
+
+class _CustomerDashboardState extends State<CustomerDashboard> with SingleTickerProviderStateMixin {
+  late TabController _tab; String query = ""; List products = []; Map? pro;
+
+  @override
+  void initState() { super.initState(); _tab = TabController(length: 2, vsync: this); _load(); }
+  _load() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? data = prefs.getString('global_products');
+    if (data != null) products = json.decode(data);
+    if (prefs.getBool('pro_status') ?? false) pro = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'img': prefs.getString('pro_img')};
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = products.where((p) => p['name'].toString().toLowerCase().contains(query.toLowerCase())).toList();
+    return Scaffold(
+      appBar: const DashboardHeader(title: "Trinity Market", role: 'cust'),
+      floatingActionButton: FloatingActionButton(backgroundColor: Colors.redAccent, onPressed: () => _openAI(context), child: const Icon(Icons.auto_awesome, color: Colors.white)),
+      body: Column(children: [
+        Padding(padding: const EdgeInsets.all(15), child: TextField(onChanged: (v) => setState(() => query = v), decoration: InputDecoration(hintText: "Search anything...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white10, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)))),
+        TabBar(controller: _tab, indicatorColor: Colors.redAccent, tabs: const [Tab(text: "PRODUCTS"), Tab(text: "HIRE EXPERTS")]),
+        Expanded(child: TabBarView(controller: _tab, children: [
+          _productList(filtered),
+          _expertList()
+        ]))
       ]),
-    ),
-  );
-  Widget _btn(context, r, i) => Padding(padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10), child: Card(child: ListTile(title: Text(r, style: const TextStyle(fontWeight: FontWeight.bold)), leading: Icon(i, color: Colors.redAccent), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => LoginPage(role: r, toggleTheme: toggleTheme))))));
+    );
+  }
+
+  Widget _productList(List list) => ListView.builder(itemCount: list.length, itemBuilder: (c, i) => Card(margin: const EdgeInsets.all(10), child: ListTile(
+    onTap: () => _showBuyingFlow(list[i]),
+    leading: Image.file(File(list[i]['imgs'][0]), width: 50, height: 50, fit: BoxFit.cover),
+    title: Text(list[i]['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+    subtitle: Text("₹${list[i]['price']} | ${list[i]['disc']}% Off"),
+    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.redAccent),
+  )));
+
+  Widget _expertList() => ListView(children: [
+    if (pro != null) Card(margin: const EdgeInsets.all(15), child: ListTile(
+      leading: CircleAvatar(backgroundImage: FileImage(File(pro!['img']))),
+      title: Text(pro!['name']), subtitle: Text(pro!['job']),
+      trailing: ElevatedButton(onPressed: () => _showBookingFlow(pro!), child: const Text("BOOK NOW")),
+    ))
+  ]);
+
+  void _showBuyingFlow(Map p) {
+    showModalBottomSheet(context: context, builder: (c) => Padding(padding: const EdgeInsets.all(25), child: Column(mainAxisSize: MainAxisSize.min, children: [
+      const Text("Amazon-Style Tracking", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+      const SizedBox(height: 10),
+      const LinearProgressIndicator(value: 0.3, backgroundColor: Colors.white10, color: Colors.green),
+      const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text("Status: Order Placed (Processing)")),
+      const Divider(),
+      ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, minimumSize: const Size(double.infinity, 50)), onPressed: () => Navigator.pop(context), child: const Text("CONFIRM PURCHASE")),
+    ])));
+  }
+
+  void _showBookingFlow(Map pr) {
+    showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 7))).then((date) {
+      if (date != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Expert Booked for ${date.day}/${date.month}!")));
+    });
+  }
 }
 
-// --- LOGIN ---
-class LoginPage extends StatefulWidget {
-  final String role; final VoidCallback toggleTheme;
-  const LoginPage({super.key, required this.role, required this.toggleTheme});
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final _id = TextEditingController(), _otp = TextEditingController(); bool sent = false;
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text("${widget.role} Access")),
-    body: Padding(padding: const EdgeInsets.all(30), child: Column(children: [
-      TextField(controller: _id, decoration: const InputDecoration(labelText: "Mobile / Email", border: OutlineInputBorder())),
-      if (sent) const SizedBox(height: 15),
-      if (sent) TextField(controller: _otp, decoration: const InputDecoration(labelText: "OTP (123456)", border: OutlineInputBorder())),
-      const SizedBox(height: 30),
-      ElevatedButton(onPressed: () async {
-        if (!sent) setState(() => sent = true);
-        else if (_otp.text == "123456") {
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString('userRole', widget.role);
-          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => SplashScreen(toggleTheme: widget.toggleTheme)), (r) => false);
-        }
-      }, style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 55)), child: Text(sent ? "VERIFY" : "GET OTP"))
-    ])),
-  );
-}
-
-// --- 1. SHOPKEEPER DASHBOARD ---
+// --- 2. SHOPKEEPER DASHBOARD ---
 class ShopDashboard extends StatefulWidget {
-  final VoidCallback toggleTheme;
-  const ShopDashboard({super.key, required this.toggleTheme});
+  const ShopDashboard({super.key});
   @override
   State<ShopDashboard> createState() => _ShopDashboardState();
 }
@@ -215,7 +184,7 @@ class _ShopDashboardState extends State<ShopDashboard> {
 
   _save() async {
     if (_n.text.isEmpty || _imgs.isEmpty) return;
-    products.add({'name': _n.text, 'price': _p.text, 'disc': _d.text, 'qty': _q.text, 'imgs': _imgs, 'shop': 'Trinity Store'});
+    products.add({'name': _n.text, 'price': _p.text, 'disc': _d.text, 'qty': _q.text, 'imgs': _imgs});
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('global_products', json.encode(products));
     setState(() { _n.clear(); _p.clear(); _d.clear(); _q.clear(); _imgs = []; });
@@ -224,190 +193,133 @@ class _ShopDashboardState extends State<ShopDashboard> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("Console"), actions: [
-      IconButton(icon: const Icon(Icons.person), onPressed: () => showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => const ProfileManager(role: 'shop'))),
-      IconButton(icon: const Icon(Icons.settings), onPressed: () => _settings(context)),
-    ]),
+    appBar: const DashboardHeader(title: "Inventory Master", role: 'shop'),
     body: ListView(padding: const EdgeInsets.all(20), children: [
-      const Text("List New Product", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
-      const SizedBox(height: 15),
+      const Text("Add Stock", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
       GestureDetector(
         onTap: () async {
           final p = await ImagePicker().pickMultiImage();
           if (p.isNotEmpty) setState(() => _imgs = p.map((f)=>f.path).toList());
         },
-        child: Container(height: 100, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.redAccent.withOpacity(0.3))), child: _imgs.isEmpty ? const Icon(Icons.add_a_photo) : ListView(scrollDirection: Axis.horizontal, children: _imgs.map((f)=>Image.file(File(f))).toList())),
+        child: Container(height: 100, margin: const EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)), child: _imgs.isEmpty ? const Icon(Icons.add_a_photo) : ListView(scrollDirection: Axis.horizontal, children: _imgs.map((f)=>Image.file(File(f))).toList())),
       ),
-      TextField(controller: _n, decoration: const InputDecoration(labelText: "Name")),
+      TextField(controller: _n, decoration: const InputDecoration(labelText: "Item Name")),
       Row(children: [Expanded(child: TextField(controller: _p, decoration: const InputDecoration(labelText: "Price"))), Expanded(child: TextField(controller: _d, decoration: const InputDecoration(labelText: "Disc%"))), Expanded(child: TextField(controller: _q, decoration: const InputDecoration(labelText: "Qty")))]),
-      ElevatedButton(onPressed: _save, style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white), child: const Text("ADD TO STORE")),
+      ElevatedButton(onPressed: _save, style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent), child: const Text("LIST PRODUCT")),
       const Divider(height: 40),
-      ...products.asMap().entries.map((e) => Card(child: ListTile(leading: Image.file(File(e.value['imgs'][0]), width: 50, height: 50, fit: BoxFit.cover), title: Text(e.value['name']), subtitle: Text("₹${e.value['price']}"), trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () async { products.removeAt(e.key); SharedPreferences prefs = await SharedPreferences.getInstance(); await prefs.setString('global_products', json.encode(products)); _load(); })))).toList()
+      const Text("My Store Ratings: ⭐ 4.8 (120 Reviews)", style: TextStyle(color: Colors.amber, fontSize: 12)),
+      ...products.map((p) => Card(child: ListTile(title: Text(p['name']), subtitle: Text("₹${p['price']}")))).toList()
     ]),
   );
-
-  void _settings(context) {
-    showModalBottomSheet(context: context, builder: (c) => Column(mainAxisSize: MainAxisSize.min, children: [
-      ListTile(leading: const Icon(Icons.brightness_6), title: const Text("Theme Toggle"), onTap: widget.toggleTheme),
-      ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text("Sign Out"), onTap: () async { SharedPreferences prefs = await SharedPreferences.getInstance(); await prefs.remove('userRole'); Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => const RoleSelectionPage()), (r) => false); }),
-    ]));
-  }
 }
 
-// --- 2. PROFESSIONAL DASHBOARD ---
+// --- 3. PROFESSIONAL DASHBOARD (OTP SECURITY) ---
 class ProDashboard extends StatefulWidget {
-  final VoidCallback toggleTheme;
-  const ProDashboard({super.key, required this.toggleTheme});
+  const ProDashboard({super.key});
   @override
   State<ProDashboard> createState() => _ProDashboardState();
 }
 
 class _ProDashboardState extends State<ProDashboard> {
-  String name = "Trinity Expert", job = "Specialist"; bool online = false; File? img;
-
+  bool online = false; String name = "Partner"; File? img;
   @override
   void initState() { super.initState(); _load(); }
   _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      name = prefs.getString('pro_name') ?? "Set Name";
-      job = prefs.getString('pro_job') ?? "Set Job";
+      name = prefs.getString('pro_name') ?? "Expert";
       online = prefs.getBool('pro_status') ?? false;
-      String? p = prefs.getString('pro_img'); if (p != null) img = File(p);
+      String? path = prefs.getString('pro_img'); if (path != null) img = File(path);
     });
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("Expert Panel"), actions: [
-      IconButton(icon: const Icon(Icons.person), onPressed: () async { await showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => const ProfileManager(role: 'pro')); _load(); }),
-      IconButton(icon: const Icon(Icons.settings), onPressed: () => _settings(context)),
-    ]),
+    appBar: const DashboardHeader(title: "Partner Hub", role: 'pro'),
     body: Column(children: [
       Container(
-        margin: const EdgeInsets.all(20), padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF800000), Colors.black]), borderRadius: BorderRadius.circular(25), border: Border.all(color: Colors.redAccent.withOpacity(0.5))),
+        margin: const EdgeInsets.all(20), padding: const EdgeInsets.all(25),
+        decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF800000), Colors.black]), borderRadius: BorderRadius.circular(30)),
         child: Column(children: [
-          CircleAvatar(radius: 50, backgroundImage: img != null ? FileImage(img!) : null, child: img == null ? const Icon(Icons.person, size: 40) : null),
+          CircleAvatar(radius: 50, backgroundImage: img != null ? FileImage(img!) : null),
           const SizedBox(height: 10),
-          Text(name, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          Text(job.toUpperCase(), style: const TextStyle(color: Colors.white70, letterSpacing: 2)),
-          const Divider(color: Colors.white24),
-          const Text("VERIFIED BY TRINITY", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text("VERIFIED EXPERT", style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
         ]),
       ),
-      SwitchListTile(title: Text(online ? "YOU ARE ONLINE" : "OFFLINE", style: TextStyle(color: online ? Colors.green : Colors.red, fontWeight: FontWeight.bold)), value: online, activeColor: Colors.green, onChanged: (v) async {
-         SharedPreferences prefs = await SharedPreferences.getInstance();
-         await prefs.setBool('pro_status', v); setState(() => online = v);
+      SwitchListTile(title: const Text("Work Availability"), value: online, activeColor: Colors.green, onChanged: (v) async {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('pro_status', v); setState(() => online = v);
       }),
+      const Divider(),
+      const ListTile(title: Text("Recent Booking"), subtitle: Text("Customer: Abhi | Subah 10:00 AM"), trailing: Icon(Icons.timer, color: Colors.orange)),
+      Padding(padding: const EdgeInsets.all(20), child: TextField(decoration: const InputDecoration(labelText: "Enter Completion OTP from Customer", border: OutlineInputBorder()), onSubmitted: (v) {
+        if(v == "1234") ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Work Completed! Payment Released.")));
+      }))
     ]),
   );
-
-  void _settings(context) {
-    showModalBottomSheet(context: context, builder: (c) => Column(mainAxisSize: MainAxisSize.min, children: [
-      ListTile(leading: const Icon(Icons.brightness_6), title: const Text("Theme Toggle"), onTap: widget.toggleTheme),
-      ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text("Sign Out"), onTap: () async { SharedPreferences prefs = await SharedPreferences.getInstance(); await prefs.remove('userRole'); Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => const RoleSelectionPage()), (r) => false); }),
-    ]));
-  }
 }
 
-// --- 3. CUSTOMER DASHBOARD ---
-class CustomerDashboard extends StatefulWidget {
-  final VoidCallback toggleTheme;
-  const CustomerDashboard({super.key, required this.toggleTheme});
+// --- SHARED PROFILE SHEET ---
+class ProfileSheet extends StatefulWidget {
+  final String role;
+  const ProfileSheet({super.key, required this.role});
   @override
-  State<CustomerDashboard> createState() => _CustomerDashboardState();
+  State<ProfileSheet> createState() => _ProfileSheetState();
 }
 
-class _CustomerDashboardState extends State<CustomerDashboard> with SingleTickerProviderStateMixin {
-  late TabController _tab; String query = ""; List products = []; Map? pro;
-
+class _ProfileSheetState extends State<ProfileSheet> {
+  final _n = TextEditingController(), _p = TextEditingController(), _a = TextEditingController(); File? _img;
   @override
-  void initState() { super.initState(); _tab = TabController(length: 2, vsync: this); _sync(); }
-  _sync() async {
+  void initState() { super.initState(); _load(); }
+  _load() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? data = prefs.getString('global_products');
     setState(() {
-      if (data != null) products = json.decode(data);
-      if (prefs.getBool('pro_status') ?? false) {
-        pro = {'name': prefs.getString('pro_name'), 'job': prefs.getString('pro_job'), 'img': prefs.getString('pro_img')};
-      } else { pro = null; }
+      _n.text = prefs.getString('${widget.role}_name') ?? "";
+      _p.text = prefs.getString('${widget.role}_phone') ?? "";
+      _a.text = prefs.getString('${widget.role}_addr') ?? "";
+      String? path = prefs.getString('${widget.role}_img'); if (path != null) _img = File(path);
     });
   }
-
   @override
-  Widget build(BuildContext context) {
-    final filtered = products.where((p) => p['name'].toString().toLowerCase().contains(query.toLowerCase())).toList();
-    return Scaffold(
-      appBar: AppBar(title: const Text("Marketplace"), actions: [
-        IconButton(icon: const Icon(Icons.person), onPressed: () => showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => const ProfileManager(role: 'cust'))),
-        IconButton(icon: const Icon(Icons.settings), onPressed: () => _settings(context)),
-      ]),
-      floatingActionButton: FloatingActionButton(backgroundColor: Colors.redAccent, onPressed: () => _openAI(context), child: const Icon(Icons.auto_awesome, color: Colors.white)),
-      body: Column(children: [
-        Padding(padding: const EdgeInsets.all(15), child: TextField(onChanged: (v) => setState(() => query = v), decoration: InputDecoration(hintText: "Search for everything...", prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white10, border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)))),
-        TabBar(controller: _tab, indicatorColor: Colors.redAccent, labelColor: Colors.redAccent, tabs: const [Tab(text: "PRODUCTS"), Tab(text: "EXPERTS")]),
-        Expanded(child: TabBarView(controller: _tab, children: [
-          filtered.isEmpty ? const Center(child: Text("No items found")) : ListView.builder(itemCount: filtered.length, itemBuilder: (c, i) => _card(filtered[i])),
-          _expertView()
-        ]))
-      ]),
-    );
-  }
-
-  Widget _card(Map p) => Card(margin: const EdgeInsets.all(10), child: ListTile(
-    onTap: () => _zoom(p['imgs']),
-    leading: Image.file(File(p['imgs'][0]), width: 60, height: 60, fit: BoxFit.cover),
-    title: Text(p['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-    subtitle: Text("₹${p['price']} | ${p['disc']}% Off"),
-    trailing: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent), onPressed: () => _buy(p), child: const Text("BUY", style: TextStyle(color: Colors.white))),
-  ));
-
-  Widget _expertView() => ListView(children: [
-    if (pro != null && (pro!['name'].toLowerCase().contains(query.toLowerCase()) || pro!['job'].toLowerCase().contains(query.toLowerCase())))
-      Card(margin: const EdgeInsets.all(15), child: ListTile(leading: CircleAvatar(backgroundImage: FileImage(File(pro!['img']))), title: Text(pro!['name']), subtitle: Text(pro!['job']), trailing: ElevatedButton(onPressed: (){}, child: const Text("HIRE"))))
-  ]);
-
-  void _buy(Map p) {
-    showModalBottomSheet(context: context, builder: (c) => Container(padding: const EdgeInsets.all(25), child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Text("Trinity Checkout", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent)),
-      const Divider(),
-      Text("Item: ${p['name']}"), Text("Total: ₹${p['price']}"),
-      const SizedBox(height: 20),
-      SizedBox(width: double.infinity, height: 50, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent), onPressed: () => Navigator.pop(context), child: const Text("CONFIRM ORDER", style: TextStyle(color: Colors.white)))),
-    ])));
-  }
-
-  void _zoom(List imgs) { showDialog(context: context, builder: (c) => Dialog.fullscreen(child: Stack(children: [PhotoViewGallery.builder(itemCount: imgs.length, builder: (c, i) => PhotoViewGalleryPageOptions(imageProvider: FileImage(File(imgs[i])))), Positioned(top: 40, right: 20, child: IconButton(icon: const Icon(Icons.close, color: Colors.white, size: 30), onPressed: () => Navigator.pop(c)))]))); }
-
-  void _settings(context) {
-    showModalBottomSheet(context: context, builder: (c) => Column(mainAxisSize: MainAxisSize.min, children: [
-      ListTile(leading: const Icon(Icons.brightness_6), title: const Text("Theme Toggle"), onTap: widget.toggleTheme),
-      ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text("Sign Out"), onTap: () async { SharedPreferences prefs = await SharedPreferences.getInstance(); await prefs.remove('userRole'); Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => const RoleSelectionPage()), (r) => false); }),
-    ]));
-  }
+  Widget build(BuildContext context) => Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20), child: Column(mainAxisSize: MainAxisSize.min, children: [
+    GestureDetector(onTap: () async { final p = await ImagePicker().pickImage(source: ImageSource.gallery); if (p != null) setState(() => _img = File(p.path)); }, child: CircleAvatar(radius: 50, backgroundImage: _img != null ? FileImage(_img!) : null, child: _img == null ? const Icon(Icons.camera_alt) : null)),
+    TextField(controller: _n, decoration: const InputDecoration(labelText: "Name")),
+    TextField(controller: _p, decoration: const InputDecoration(labelText: "Mobile")),
+    TextField(controller: _a, decoration: const InputDecoration(labelText: "Address")),
+    const SizedBox(height: 20),
+    ElevatedButton(onPressed: () async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('${widget.role}_name', _n.text);
+      await prefs.setString('${widget.role}_phone', _p.text);
+      await prefs.setString('${widget.role}_addr', _a.text);
+      if (_img != null) await prefs.setString('${widget.role}_img', _img!.path);
+      Navigator.pop(context);
+    }, child: const Text("SAVE PROFILE")),
+    const SizedBox(height: 20)
+  ]));
 }
 
-// --- AI CHATBOT ---
-void _openAI(BuildContext context) {
-  final ctrl = TextEditingController();
-  List<Map<String, String>> chat = [{'r': 'ai', 'm': 'Trinity AI Online. How can I help you, Boss?'}];
-  showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => StatefulBuilder(builder: (context, setS) => Padding(
-    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-    child: Container(height: 450, padding: const EdgeInsets.all(20), child: Column(children: [
-      const Text("Trinity Intelligence", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent)),
-      Expanded(child: ListView.builder(itemCount: chat.length, itemBuilder: (c, i) => Align(
-        alignment: chat[i]['r'] == 'u' ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(margin: const EdgeInsets.symmetric(vertical: 5), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: chat[i]['r'] == 'u' ? Colors.redAccent : Colors.white10, borderRadius: BorderRadius.circular(15)), child: Text(chat[i]['m']!, style: const TextStyle(color: Colors.white))),
-      ))),
-      TextField(controller: ctrl, decoration: InputDecoration(hintText: "Enter command...", suffixIcon: IconButton(icon: const Icon(Icons.send, color: Colors.redAccent), onPressed: () {
-        setS(() {
-          chat.add({'r': 'u', 'm': ctrl.text});
-          String r = "Analyzing request... Command executed.";
-          if (ctrl.text.toLowerCase().contains("hire")) r = "Navigate to Experts tab to hire verified professionals.";
-          chat.add({'r': 'ai', 'm': r}); ctrl.clear();
-        });
-      })))
-    ])),
-  )));
+// --- AI & ROLE SELECTION (LOGIC ONLY) ---
+void _openAI(context) { showModalBottomSheet(context: context, builder: (c) => const Center(child: Text("Trinity Intelligence Online..."))); }
+
+class RoleSelectionPage extends StatelessWidget {
+  const RoleSelectionPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(body: Container(width: double.infinity, decoration: const BoxDecoration(gradient: LinearGradient(colors: [Colors.black, Color(0xFF400000)])), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+    const Text("SELECT IDENTITY", style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 30),
+    ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const LoginPage(role: 'Shopkeeper'))), child: const Text("SHOPKEEPER")),
+    ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const LoginPage(role: 'Customer'))), child: const Text("CUSTOMER")),
+    ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const LoginPage(role: 'Professional'))), child: const Text("PROFESSIONAL")),
+  ])));
+}
+
+class LoginPage extends StatelessWidget {
+  final String role; const LoginPage({super.key, required this.role});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(role)), body: Center(child: ElevatedButton(onPressed: () async {
+    SharedPreferences prefs = await SharedPreferences.getInstance(); await prefs.setString('userRole', role);
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => const SplashScreen()), (r) => false);
+  }, child: const Text("LOGIN (BYPASS OTP)"))));
 }
